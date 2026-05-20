@@ -8,6 +8,8 @@ const { connectDB } = require('./config/db.js')
 const authRoutes = require('./routes/authRoutes')
 const companyRoutes = require('./routes/companyRoutes')
 const branchRoutes = require('./routes/branchRoutes')
+const permissionRoutes = require('./routes/permissionRoutes')
+const userRoutes = require('./routes/userRoutes.js')
 
 // // Connect DB
 connectDB()
@@ -28,6 +30,10 @@ app.use(
 app.use('/api/auth', authRoutes)
 app.use('/api/companies', companyRoutes)
 app.use('/api/branches', branchRoutes)
+app.use('/api/permissions', permissionRoutes)
+app.use('/api/users', userRoutes)
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Routes import
 // const companyRoutes = require('./routes/companyRoutes')

@@ -28,6 +28,12 @@ router.post(
 )
 
 router.put(
+  '/:id/bank-details',
+  authMiddleware,
+  companyController.addBankDetails,
+)
+
+router.put(
   '/:id',
   authMiddleware,
   upload.single('logo'),

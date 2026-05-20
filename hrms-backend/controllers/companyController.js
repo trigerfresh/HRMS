@@ -39,6 +39,53 @@ async function createCompany(req, res) {
   }
 }
 
+// POST /api/companies/:id/bank-details
+async function addBankDetails(req, res) {
+  try {
+    const companyId = req.params.id
+    const {
+      bank_name,
+      ifsc_code,
+      branch_city,
+      swift_ac_no,
+      ac_no,
+      ac_type,
+      micr_no,
+      branch_name,
+    } = req.body
+
+    // Check if company exists
+    const companyCheck = await sql.query`
+      SELECT * FROM companies WHERE id = ${companyId}
+    `
+    if (!companyCheck.recordset.length) {
+      return res.status(404).json({ message: 'Company not found' })
+    }
+
+    // Update bank details
+    await sql.query`
+      UPDATE companies
+      SET 
+        bank_name = ${bank_name},
+        ifsc_code = ${ifsc_code},
+        branch_city = ${branch_city},
+        swift_ac_no = ${swift_ac_no},
+        ac_no = ${ac_no},
+        ac_type = ${ac_type},
+        micr_no = ${micr_no},
+        branch_name = ${branch_name},
+        modified_on = GETDATE(),
+        modified_by = ${req.user.id}
+      WHERE id = ${companyId}
+    `
+
+    res.status(200).json({ message: 'Bank details saved successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
 // ---------------- GET COMPANIES ----------------
 async function getCompanies(req, res) {
   try {
@@ -114,4 +161,5 @@ module.exports = {
   updateCompany,
   deleteCompany,
   exportCompaniesToExcel,
+  addBankDetails,
 }
