@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { FaPlus, FaSearch, FaPen, FaTrashAlt } from "react-icons/fa"; // Import icons
-import SearchPanel from "../../utils/FilterPanel";
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { FaPlus, FaSearch, FaPen, FaTrashAlt } from 'react-icons/fa' // Import icons
+import SearchPanel from '../../utils/FilterPanel'
 import {
   Alert,
   Button,
@@ -11,64 +11,62 @@ import {
   Form,
   Row,
   Table,
-} from "react-bootstrap";
+} from 'react-bootstrap'
 
 const BranchPage = () => {
-  const [branches, setBranches] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [isEditing, setIsEditing] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [branches, setBranches] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [isEditing, setIsEditing] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const initialFormData = {
-    branchName: "",
-    areaName: "",
-    email: "",
-    costingMethod: "FIFO",
-    defSalesAccount: "",
-    defBranchDispAccount: "",
-    address: "",
-    pincode: "",
-    contactNo: "",
-    defPurchaseAccount: "",
-    defBranchRecvAccount: "",
+    branchName: '',
+    areaName: '',
+    email: '',
+    costingMethod: 'FIFO',
+    defSalesAccount: '',
+    defBranchDispAccount: '',
+    address: '',
+    pincode: '',
+    contactNo: '',
+    defPurchaseAccount: '',
+    defBranchRecvAccount: '',
     companyId: [],
-  };
-  const [formData, setFormData] = useState(initialFormData);
+  }
+  const [formData, setFormData] = useState(initialFormData)
 
   const [searchFields, setSearchFields] = useState([
-    { field: "branchName", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'branchName', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
 
   const branchSearchOptions = [
-    { value: "branchName", label: "Branch Name" },
-    { value: "areaName", label: "Area Name" },
-    { value: "pincode", label: "Pincode" },
-  ];
+    { value: 'branchName', label: 'Branch Name' },
+    { value: 'areaName', label: 'Area Name' },
+    { value: 'pincode', label: 'Pincode' },
+  ]
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-  };
+    const token = localStorage.getItem('token')
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+  }
 
   const fetchBranches = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearchFields = searchFields.filter(
-        (f) => f.field && f.keyword,
-      );
+      const params = {}
+      const validSearchFields = searchFields.filter((f) => f.field && f.keyword)
       if (validSearchFields.length > 0) {
-        params.searchFields = JSON.stringify(validSearchFields);
+        params.searchFields = JSON.stringify(validSearchFields)
       }
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/branches`,
@@ -76,235 +74,262 @@ const BranchPage = () => {
           params,
           ...getAuthHeaders(),
         },
-      );
-      setBranches(res.data);
+      )
+      setBranches(res.data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to load branches.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to load branches.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchCompanies = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/companies`,
         getAuthHeaders(),
-      );
-      setCompanies(res.data);
+      )
+      setCompanies(res.data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Error fetching companies");
-      console.error("Error fetching companies:", err);
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Error fetching companies')
+      console.error('Error fetching companies:', err)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchBranches();
-    fetchCompanies();
-  }, []);
+    fetchBranches()
+    fetchCompanies()
+  }, [])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
-    setFormData({ ...formData, [name]: value });
+    setFormData({ ...formData, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const handleCompanySelection = (companyId) => {
-    const selectedCompanies = [...formData.companyId];
-    const index = selectedCompanies.indexOf(companyId);
+    const selectedCompanies = [...formData.companyId]
+    const index = selectedCompanies.indexOf(companyId)
     if (index > -1) {
-      selectedCompanies.splice(index, 1);
+      selectedCompanies.splice(index, 1)
     } else {
-      selectedCompanies.push(companyId);
+      selectedCompanies.push(companyId)
     }
-    setFormData({ ...formData, companyId: selectedCompanies });
+    setFormData({ ...formData, companyId: selectedCompanies })
 
     if (validationErrors.companyId) {
       setValidationErrors((prev) => ({
         ...prev,
-        companyId: "",
-      }));
+        companyId: '',
+      }))
     }
-  };
+  }
 
   const resetForm = () => {
-    setFormData(initialFormData);
-    setValidationErrors({});
-    setIsEditing(null);
+    setFormData(initialFormData)
+    setValidationErrors({})
+    setIsEditing(null)
     // setShowForm(false);
-  };
+  }
 
   const validateForm = () => {
-    const errors = {};
+    const errors = {}
 
     if (!formData.branchName.trim()) {
-      errors.branchName = "Branch name is required.";
+      errors.branchName = 'Branch name is required.'
     }
 
     if (!formData.companyId || formData.companyId.length === 0) {
-      errors.companyId = "Please select at least one company.";
+      errors.companyId = 'Please select at least one company.'
     }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+
     if (!validateForm()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
-    } else {
-      setValidationErrors({});
+      alert('Please fix validation errors')
+      return
     }
-
-    // console.log(formData.companyId);
-
-    const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (Array.isArray(formData[key])) {
-        data.append(key, JSON.stringify(formData[key]));
-      } else if (formData[key]) data.append(key, formData[key]);
-    });
-
-    // for (let [key, value] of data.entries()) {
-    //   console.log(`${key}:`, value);
-    // }
 
     try {
+      const selectedCompanyNames = companies
+        .filter((c) => formData.companyId.includes(c.id))
+        .map((c) => c.company_name)
+        .join(',')
+
+      const payload = {
+        branch_name: formData.branchName,
+        branch_code: '',
+        company_name: selectedCompanyNames,
+        company_id: formData.companyId.join(','),
+
+        email: formData.email,
+        address: formData.address,
+        city: formData.areaName,
+        pincode: formData.pincode,
+
+        costing_method: formData.costingMethod,
+        def_purchase_ac: formData.defPurchaseAccount,
+        def_sales_ac: formData.defSalesAccount,
+        def_branch_recv_ac: formData.defBranchRecvAccount,
+        def_branch_desp_ac: formData.defBranchDispAccount,
+
+        phone: formData.contactNo,
+      }
+
       const url = isEditing
-        ? `${import.meta.env.VITE_API_URL}/api/branches/${isEditing._id}`
-        : `${import.meta.env.VITE_API_URL}/api/branches`;
-      const method = isEditing ? "put" : "post";
-      const config = {
+        ? `${import.meta.env.VITE_API_URL}/api/branches/${isEditing.id}`
+        : `${import.meta.env.VITE_API_URL}/api/branches`
+
+      const method = isEditing ? 'put' : 'post'
+
+      await axios[method](url, payload, {
         headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders().headers,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-      };
-      await axios[method](url, data, config);
-      alert(`Branch ${isEditing ? "updated" : "created"} successfully!`);
-      resetForm();
-      setShowForm(false);
-      fetchBranches();
+      })
+
+      alert(`Branch ${isEditing ? 'updated' : 'created'} successfully!`)
+
+      resetForm()
+      setShowForm(false)
+      fetchBranches()
     } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else
-        alert(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
-      console.error(err);
+      console.error(err)
+
+      alert(err.response?.data?.message || 'Operation failed')
     }
-  };
+  }
 
   const handleEdit = (branch) => {
-    setIsEditing(branch);
-    setValidationErrors({});
+    setIsEditing(branch)
+
+    setValidationErrors({})
+
     setFormData({
-      ...initialFormData,
-      ...branch,
-      companyId: branch.companyId.map((c) => c._id),
-    });
-    setShowForm(true);
-    setShowSearch(false);
-  };
+      branchName: branch.branch_name || '',
+      areaName: branch.city || '',
+      email: branch.email || '',
+      costingMethod: branch.costing_method || 'FIFO',
+
+      defSalesAccount: branch.def_sales_ac || '',
+      defBranchDispAccount: branch.def_branch_desp_ac || '',
+
+      address: branch.address || '',
+      pincode: branch.pincode || '',
+      contactNo: branch.phone || '',
+
+      defPurchaseAccount: branch.def_purchase_ac || '',
+      defBranchRecvAccount: branch.def_branch_recv_ac || '',
+
+      companyId: branch.company_id
+        ? branch.company_id.split(',').map(Number)
+        : [],
+    })
+
+    setShowForm(true)
+    setShowSearch(false)
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this branch?")) {
+    if (window.confirm('Are you sure you want to delete this branch?')) {
       try {
         await axios.delete(
           `${import.meta.env.VITE_API_URL}/api/branches/${id}`,
           getAuthHeaders(),
-        );
-        alert("Branch deleted successfully!");
-        fetchBranches();
+        )
+        alert('Branch deleted successfully!')
+        fetchBranches()
       } catch (err) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        } else alert("Delete operation failed!");
+          localStorage.removeItem('token')
+          window.location.href = '/login'
+        } else alert('Delete operation failed!')
       }
     }
-  };
+  }
 
   useEffect(() => {
-    fetchBranches();
-  }, [searchFields, dateFilter]);
+    fetchBranches()
+  }, [searchFields, dateFilter])
 
-  const handleSearch = () => fetchBranches();
+  const handleSearch = () => fetchBranches()
 
   const resetSearch = () => {
-    setSearchFields([{ field: "branchName", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchBranches();
-  };
+    setSearchFields([{ field: 'branchName', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchBranches()
+  }
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/branches/export`,
         {
           params,
-          responseType: "blob", // IMPORTANT
+          responseType: 'blob', // IMPORTANT
           ...getAuthHeaders(),
         },
-      );
+      )
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Branches_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `Branches_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
-          Branch Management{" "}
+          Branch Management{' '}
           <span className="text-success">({branches.length})</span>
         </h1>
         <div className="page-actions">
@@ -312,15 +337,15 @@ const BranchPage = () => {
             className="search-btn" // Changed class name
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           <button
             className="btn-primary" // Changed class name
             onClick={() => {
-              resetForm();
+              resetForm()
               // setIsEditing(null);
-              setShowSearch(false);
-              setShowForm(true);
+              setShowSearch(false)
+              setShowForm(true)
             }}
           >
             <FaPlus /> Create New
@@ -345,9 +370,9 @@ const BranchPage = () => {
         <Card className="branch-card">
           <h2 className="card-header mb-4">
             {isEditing ? (
-              <span>Edit Branch - {isEditing.branchName}</span>
+              <span>Edit Branch - {isEditing.branch_name}</span>
             ) : (
-              "Create New Branch"
+              'Create New Branch'
             )}
           </h2>
           {Object.keys(validationErrors).length > 0 && (
@@ -491,18 +516,18 @@ const BranchPage = () => {
               <h4 className="fs-5">Select Company *</h4>
               {companies.map((company) => (
                 <Form.Check
-                  key={company._id}
+                  key={company.id}
                   type="checkbox"
-                  id={`company-${company._id}`}
-                  label={company.companyName}
-                  checked={formData.companyId.includes(company._id)}
-                  onChange={() => handleCompanySelection(company._id)}
+                  id={`company-${company.id}`}
+                  label={company.company_name}
+                  checked={formData.companyId.includes(company.id)}
+                  onChange={() => handleCompanySelection(company.id)}
                   className="mb-2"
                   isInvalid={!!validationErrors.companyId}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleCompanySelection(company._id); // ✅ call directly
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleCompanySelection(company.id) // ✅ call directly
                     }
                   }}
                 />
@@ -519,14 +544,14 @@ const BranchPage = () => {
                 variant="secondary"
                 className="me-2"
                 onClick={() => {
-                  resetForm();
-                  setShowForm(false);
+                  resetForm()
+                  setShowForm(false)
                 }}
               >
                 Cancel
               </Button>
               <Button type="button" variant="primary" onClick={handleSubmit}>
-                {isEditing ? "Update Company" : "Save Company"}
+                {isEditing ? 'Update Company' : 'Save Company'}
               </Button>
             </div>
           </Form>
@@ -562,13 +587,11 @@ const BranchPage = () => {
                   </tr>
                 ) : (
                   branches.map((branch) => (
-                    <tr key={branch._id}>
-                      <td>{branch.branchName}</td>
+                    <tr key={branch.id}>
+                      <td>{branch.branch_name}</td>
                       <td>{branch.address}</td>
                       <td>{branch.pincode}</td>
-                      <td>
-                        {branch.companyId.map((c) => c.companyName).join(", ")}
-                      </td>
+                      <td>{branch.company_id || '-'}</td>
                       <td>
                         <div className="table-actions">
                           <button
@@ -579,7 +602,7 @@ const BranchPage = () => {
                           </button>
                           <button
                             className="icon-btn delete"
-                            onClick={() => handleDelete(branch._id)}
+                            onClick={() => handleDelete(branch.id)}
                           >
                             <FaTrashAlt />
                           </button>
@@ -594,7 +617,7 @@ const BranchPage = () => {
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default BranchPage;
+export default BranchPage

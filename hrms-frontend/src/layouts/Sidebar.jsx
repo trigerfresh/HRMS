@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom'
 import axios from 'axios'
 import {
   FaTachometerAlt,
-  FaChevronDown,
   FaThLarge,
   FaLayerGroup,
   FaUser,
@@ -16,8 +15,11 @@ import {
   FaClipboard,
   FaStore,
   FaEnvelopeOpenText,
+  FaChevronDown,
+  FaChevronUp,
 } from 'react-icons/fa'
-import logo from '../assets/images/logo2.jpg' // 👈 tuza logo src/assets madhye
+import logo from '../assets/images/logo2.jpg'
+import './Sidebar.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -36,19 +38,10 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
     Reports: <FaChartBar />,
   }
 
-  const modulePaths = {
-    Attendance: ['/attendance/print'],
-    Billing: [
-      '/billing/review',
-      '/billing/print-payment-history',
-      '/billing/print-invoice',
-    ],
-  }
-
   const [menuItems, setMenuItems] = useState([])
+  const [expandedModules, setExpandedModules] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [openModules, setOpenModules] = useState({})
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -61,6 +54,7 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
           setLoading(false)
           return
         }
+
         const config = { headers: { Authorization: `Bearer ${token}` } }
         const { data } = await axios.get(
           `${API_URL}/api/permissions/mymenu`,
@@ -69,12 +63,6 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
 
         if (Array.isArray(data)) {
           setMenuItems(data)
-          // console.log(data);
-          const initialOpenState = data.reduce((acc, module) => {
-            acc[module.moduleName] = false
-            return acc
-          }, {})
-          setOpenModules(initialOpenState)
         } else {
           setMenuItems([])
         }
@@ -93,28 +81,16 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
     fetchMenu()
   }, [])
 
-  // const toggleModule = (moduleName) => {
-  //   setOpenModules((prev) => ({ ...prev, [moduleName]: !prev[moduleName] }));
-  // };
-
   const toggleModule = (moduleName) => {
-    setOpenModules((prev) => {
-      const newState = {}
-
-      Object.keys(prev).forEach((key) => {
-        newState[key] = key === moduleName ? !prev[key] : false
-      })
-
-      return newState
-    })
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleName]: !prev[moduleName],
+    }))
   }
 
   return (
     <nav
-      className={`sidebar 
-    ${isCollapsed ? 'collapsed' : ''} 
-    ${isMobileOpen ? 'mobile-open' : ''}
-  `}
+      className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
     >
       <div className="sidebar-header">
         <img
@@ -143,51 +119,52 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
           </NavLink>
         </li>
 
-        {/* Dynamic menu */}
+        {/* Dynamic modules with dropdowns */}
         {menuItems.map((module) => (
-          <li key={module.moduleId} className="module-item">
+          <li key={module.moduleName}>
             <div
-              className="module-name"
+              className="menu-link clickable"
               onClick={() => toggleModule(module.moduleName)}
             >
               <span className="menu-icon">
-                {moduleIcons[module.moduleName] || <FaThLarge />}{' '}
+                {moduleIcons[module.moduleName] || <FaThLarge />}
               </span>
               {!isCollapsed && (
-                <span className="menu-text">{module.moduleName}</span>
-              )}
-              {!isCollapsed && (
-                <FaChevronDown
-                  className={`arrow ${
-                    openModules[module.moduleName] ? 'open' : ''
-                  }`}
-                />
+                <>
+                  <span className="menu-text">{module.moduleName}</span>
+                  <span className="dropdown-icon">
+                    {expandedModules[module.moduleName] ? (
+                      <FaChevronUp />
+                    ) : (
+                      <FaChevronDown />
+                    )}
+                  </span>
+                </>
               )}
             </div>
 
-            {!isCollapsed &&
-              openModules[module.moduleName] &&
-              module.submodules && (
-                <ul className="submodule-list">
-                  {module.submodules.map((submodule) => (
-                    <li key={submodule.submoduleId}>
-                      <NavLink
-                        to={submodule.path}
-                        className={({ isActive }) =>
-                          isActive
-                            ? 'menu-link submodule-link active'
-                            : 'menu-link submodule-link'
-                        }
-                        onClick={() => isMobileOpen && closeSidebar()}
-                      >
-                        <span className="menu-text">
-                          {submodule.submoduleName}
-                        </span>
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            {/* Submodules */}
+            {/* Submodules */}
+            {expandedModules[module.moduleName] && !isCollapsed && (
+              <ul className="submenu-list">
+                {module.submodules.map((sub) => (
+                  <li key={sub.moduleId}>
+                    <NavLink
+                      to={`/${module.moduleName.toLowerCase().replace(/\s+/g, '-')}/${sub.moduleName
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')}`} // <- add main module prefix
+                      className={({ isActive }) =>
+                        isActive ? 'submenu-link active' : 'submenu-link'
+                      }
+                      onClick={() => isMobileOpen && closeSidebar()}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {sub.moduleName}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { FaPlus, FaSearch, FaPen, FaTrashAlt, FaTimes } from "react-icons/fa";
-import SearchPanel from "../../utils/FilterPanel";
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { FaPlus, FaSearch, FaPen, FaTrashAlt, FaTimes } from 'react-icons/fa'
+import SearchPanel from '../../utils/FilterPanel'
 import {
   Button,
   Card,
@@ -12,79 +12,79 @@ import {
   Table,
   Tabs,
   Alert,
-} from "react-bootstrap";
+} from 'react-bootstrap'
 
 const CompanyPage = () => {
-  const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(null);
-  const [activeTab, setActiveTab] = useState("companyDetails");
-  const [validationErrors, setValidationErrors] = useState({});
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [isEditing, setIsEditing] = useState(null)
+  const [activeTab, setActiveTab] = useState('companyDetails')
+  const [validationErrors, setValidationErrors] = useState({})
 
   const [formData, setFormData] = useState({
-    companyName: "",
-    contactPersonName: "",
-    emailId: "",
-    address: "",
-    country: "",
-    regionState: "",
-    city: "",
-    pincode: "",
-    stateCode: "",
-    contactNo: "",
-    gstNo: "",
-    website: "",
-    currency: "INR",
-    financialYearFrom: "",
-    financialYearTo: "",
-    cinNo: "",
-    vatTin: "",
-    cstTin: "",
-    iec: "",
-    invoicePrefix: "",
-    termsAndCond: "",
-  });
-  const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(null);
+    companyName: '',
+    contactPersonName: '',
+    emailId: '',
+    address: '',
+    country: '',
+    regionState: '',
+    city: '',
+    pincode: '',
+    stateCode: '',
+    contactNo: '',
+    gstNo: '',
+    website: '',
+    currency: 'INR',
+    financialYearFrom: '',
+    financialYearTo: '',
+    cinNo: '',
+    vatTin: '',
+    cstTin: '',
+    iec: '',
+    invoicePrefix: '',
+    termsAndCond: '',
+  })
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
 
   const [bankDetails, setBankDetails] = useState([
     {
-      bankName: "",
-      accountNo: "",
-      accountType: "",
-      branchCity: "",
-      address: "",
-      swift: "",
-      micr: "",
-      ifsc: "",
+      bankName: '',
+      accountNo: '',
+      accountType: '',
+      branchCity: '',
+      address: '',
+      swift: '',
+      micr: '',
+      ifsc: '',
     },
-  ]);
+  ])
 
   const [searchFields, setSearchFields] = useState([
-    { field: "companyName", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'companyName', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    if (!token) return {};
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
+    const token = localStorage.getItem('token')
+    if (!token) return {}
+    return { headers: { Authorization: `Bearer ${token}` } }
+  }
 
   const fetchCompanies = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/companies`,
@@ -92,150 +92,150 @@ const CompanyPage = () => {
           params,
           ...getAuthHeaders(),
         },
-      );
-      setCompanies(response.data);
+      )
+      setCompanies(response.data)
+      console.log(response.data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
-        setError(err.response?.data?.message || "Failed to fetch companies.");
+        setError(err.response?.data?.message || 'Failed to fetch companies.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCompanies();
-  }, []);
+    fetchCompanies()
+  }, [])
 
   useEffect(() => {
-    fetchCompanies();
-  }, [searchFields, dateFilter]);
+    fetchCompanies()
+  }, [searchFields, dateFilter])
 
   // --- Form Handlers ---
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setLogoFile(file);
-    setLogoPreview(file ? URL.createObjectURL(file) : null);
-  };
+    const file = e.target.files[0]
+    setLogoFile(file)
+    setLogoPreview(file ? URL.createObjectURL(file) : null)
+  }
 
   const handleBankChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedBanks = [...bankDetails];
-    updatedBanks[index][name] = value;
-    setBankDetails(updatedBanks);
+    const { name, value } = e.target
+    const updatedBanks = [...bankDetails]
+    updatedBanks[index][name] = value
+    setBankDetails(updatedBanks)
 
     // Clear validation error on change
     if (validationErrors[`${name}_${index}`]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [`${name}_${index}`]: "",
-      }));
+        [`${name}_${index}`]: '',
+      }))
     }
-  };
+  }
 
   const addBankRow = () => {
     setBankDetails([
       ...bankDetails,
       {
-        bankName: "",
-        accountNo: "",
-        accountType: "",
-        branchCity: "",
-        address: "",
-        swift: "",
-        micr: "",
-        ifsc: "",
+        bankName: '',
+        accountNo: '',
+        accountType: '',
+        branchCity: '',
+        address: '',
+        swift: '',
+        micr: '',
+        ifsc: '',
       },
-    ]);
-  };
+    ])
+  }
 
   const removeBankRow = (index) => {
-    setBankDetails(bankDetails.filter((_, i) => i !== index));
-  };
+    setBankDetails(bankDetails.filter((_, i) => i !== index))
+  }
 
   const resetForm = () => {
     setFormData({
-      companyName: "",
-      contactPersonName: "",
-      emailId: "",
-      address: "",
-      country: "",
-      regionState: "",
-      city: "",
-      pincode: "",
-      stateCode: "",
-      contactNo: "",
-      gstNo: "",
-      website: "",
-      cinNo: "",
-      vatTin: "",
-      cstTin: "",
-      iec: "",
-    });
-    setLogoFile(null);
-    setLogoPreview(null);
+      companyName: '',
+      contactPersonName: '',
+      emailId: '',
+      address: '',
+      country: '',
+      regionState: '',
+      city: '',
+      pincode: '',
+      stateCode: '',
+      contactNo: '',
+      gstNo: '',
+      website: '',
+      cinNo: '',
+      vatTin: '',
+      cstTin: '',
+      iec: '',
+    })
+    setLogoFile(null)
+    setLogoPreview(null)
     setBankDetails([
       {
-        bankName: "",
-        accountNo: "",
-        accountType: "",
-        branchCity: "",
-        address: "",
-        swift: "",
-        micr: "",
-        ifsc: "",
+        bankName: '',
+        accountNo: '',
+        accountType: '',
+        branchCity: '',
+        address: '',
+        swift: '',
+        micr: '',
+        ifsc: '',
       },
-    ]);
-    setIsEditing(null);
-    setValidationErrors({});
+    ])
+    setIsEditing(null)
+    setValidationErrors({})
     // setShowForm(false);
-    setActiveTab("companyDetails");
-  };
+    setActiveTab('companyDetails')
+  }
 
   // Validation logic
   const validateCompanyDetails = () => {
-    const errors = {};
-    const gstRegex =
-      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    const errors = {}
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
     if (!formData.companyName.trim())
-      errors.companyName = "Company Name is required.";
+      errors.companyName = 'Company Name is required.'
     if (!formData.emailId.trim()) {
-      errors.emailId = "Email is required.";
+      errors.emailId = 'Email is required.'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailId)) {
-      errors.emailId = "Invalid email format.";
+      errors.emailId = 'Invalid email format.'
     }
     if (formData.contactNo && !/^\d{10}$/.test(formData.contactNo))
-      errors.contactNo = "Contact number must be 10 digits";
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
+      errors.contactNo = 'Contact number must be 10 digits'
+    const pincodeRegex = /^[1-9][0-9]{5}$/
     if (formData.pincode && !pincodeRegex.test(formData.pincode)) {
-      errors.pincode = "Please enter a valid 6-digit Pincode.";
+      errors.pincode = 'Please enter a valid 6-digit Pincode.'
     }
     if (formData.gstNo && !gstRegex.test(formData.gstNo))
-      errors.gstNo = "Invalid GST Format.";
+      errors.gstNo = 'Invalid GST Format.'
 
     if (formData.stateCode && isNaN(formData.stateCode)) {
-      errors.stateCode = "GST State Code must be a number.";
+      errors.stateCode = 'GST State Code must be a number.'
     }
     if (formData.financialYearFrom && isNaN(formData.financialYearFrom)) {
-      errors.financialYearFrom = "Financial Year From must be a number.";
+      errors.financialYearFrom = 'Financial Year From must be a number.'
     }
     if (formData.financialYearTo && isNaN(formData.financialYearTo)) {
-      errors.financialYearTo = "Financial Year To must be a number.";
+      errors.financialYearTo = 'Financial Year To must be a number.'
     }
     // if (
     //   formData.website &&
@@ -243,263 +243,286 @@ const CompanyPage = () => {
     // )
     //   errors.website = "Invalid website URL.";
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const validateBankDetails = () => {
-    const errors = {};
+    const errors = {}
     bankDetails.forEach((bank, idx) => {
-      if (!bank.bankName || bank.bankName.trim() === "") {
-        errors[`bankName_${idx}`] = "Bank name is required";
+      if (!bank.bankName || bank.bankName.trim() === '') {
+        errors[`bankName_${idx}`] = 'Bank name is required'
       }
 
-      if (!bank.accountNo || bank.accountNo.trim() === "") {
-        errors[`accountNo_${idx}`] = "Account number is required";
+      if (!bank.accountNo || bank.accountNo.trim() === '') {
+        errors[`accountNo_${idx}`] = 'Account number is required'
       } else if (!/^[0-9]{6,18}$/.test(bank.accountNo)) {
-        errors[`accountNo_${idx}`] = "Account number must be 6-18 digits";
+        errors[`accountNo_${idx}`] = 'Account number must be 6-18 digits'
       }
 
-      if (!bank.ifsc || bank.ifsc.trim() === "") {
-        errors[`ifsc_${idx}`] = "IFSC code is required";
+      if (!bank.ifsc || bank.ifsc.trim() === '') {
+        errors[`ifsc_${idx}`] = 'IFSC code is required'
       } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bank.ifsc)) {
-        errors[`ifsc_${idx}`] = "Invalid IFSC code";
+        errors[`ifsc_${idx}`] = 'Invalid IFSC code'
       }
       if (bank.micr && !/^[0-9]{9}$/.test(bank.micr)) {
-        errors[`micr_${idx}`] = "MICR Code must be 9 digits";
+        errors[`micr_${idx}`] = 'MICR Code must be 9 digits'
       }
       if (!bank.accountType) {
-        errors[`accountType_${idx}`] = "Select Account Type";
+        errors[`accountType_${idx}`] = 'Select Account Type'
       }
-      if (!bank.branchCity || bank.branchCity.trim() === "") {
-        errors[`branchCity_${idx}`] = "Branch City is required";
+      if (!bank.branchCity || bank.branchCity.trim() === '') {
+        errors[`branchCity_${idx}`] = 'Branch City is required'
       }
-    });
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    if (!validateCompanyDetails()) {
-      setActiveTab("companyDetails");
-      alert("Please fix the validation errors before submitting.");
-      return;
-    } else if (!validateBankDetails()) {
-      setActiveTab("bankDetails");
-      alert("Please fix the validation errors before submitting.");
-      return;
+    // Validate bank details
+    if (!validateBankDetails()) {
+      alert('Please fix bank validation errors')
+      return
     }
 
-    const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (formData[key]) data.append(key, formData[key]);
-    });
-    if (logoFile) data.append("logo", logoFile);
-    data.append("bankDetails", JSON.stringify(bankDetails));
-
-    // Consoling FormData (data)
-    // for (let [key, value] of data.entries()) {
-    //   console.log(`${key}:`, value);
-    // }
-
     try {
+      const data = new FormData()
+
+      // Company Data
+      data.append('company_name', formData.companyName)
+      data.append('email_id', formData.emailId)
+      data.append('address', formData.address)
+      data.append('phone', formData.contactNo)
+      data.append('city', formData.city)
+      data.append('country', formData.country)
+      data.append('pincode', formData.pincode)
+      data.append('state', formData.regionState)
+      data.append('statecode', formData.stateCode)
+      data.append('currency', formData.currency)
+      data.append('gst_no', formData.gstNo)
+      data.append('website', formData.website)
+      data.append('cin_no', formData.cinNo)
+      data.append('vat_tin', formData.vatTin)
+      data.append('cst_tin', formData.cstTin)
+      data.append('iec', formData.iec)
+      data.append('terms', formData.termsAndCond)
+
+      if (logoFile) {
+        data.append('logo', logoFile)
+      }
+
       const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
           ...getAuthHeaders().headers,
         },
-      };
-      if (isEditing) {
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/api/companies/${isEditing._id}`,
-          data,
-          config,
-        );
-        alert("Company updated successfully!");
-      } else {
-        const res = await axios.post(
+      }
+
+      let companyId = null
+
+      // =========================
+      // CREATE COMPANY
+      // =========================
+      if (!isEditing) {
+        const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/companies`,
           data,
           config,
-        );
-        // console.log(res.data);
-        alert("Company created successfully!");
+        )
+
+        companyId = response.data.company.id
       }
-      resetForm();
-      setShowForm(false);
-      fetchCompanies();
+
+      // =========================
+      // UPDATE COMPANY
+      // =========================
+      else {
+        await axios.put(
+          `${import.meta.env.VITE_API_URL}/api/companies/${isEditing.id}`,
+          data,
+          config,
+        )
+
+        companyId = isEditing.id
+      }
+
+      // =========================
+      // SAVE / UPDATE BANK DETAILS
+      // =========================
+      await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/companies/${companyId}/bank-details`,
+        {
+          bank_name: bankDetails[0].bankName,
+          ifsc_code: bankDetails[0].ifsc,
+          branch_city: bankDetails[0].branchCity,
+          swift_ac_no: bankDetails[0].swift,
+          ac_no: bankDetails[0].accountNo,
+          ac_type: bankDetails[0].accountType,
+          micr_no: bankDetails[0].micr,
+          branch_name: bankDetails[0].address,
+        },
+        getAuthHeaders(),
+      )
+
+      alert(
+        isEditing
+          ? 'Company updated successfully'
+          : 'Company created successfully',
+      )
+
+      resetForm()
+      setShowForm(false)
+      fetchCompanies()
     } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else {
-        alert(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
-        setError(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
-      }
+      console.log(err)
+
+      alert(err.response?.data?.message || 'Something went wrong')
     }
-  };
+  }
 
   const handleEdit = (company) => {
-    setIsEditing(company);
-    setValidationErrors({});
+    setIsEditing(company)
+    setValidationErrors({})
 
     // Set company details form
     setFormData({
-      companyName: company.companyName || "",
-      contactPersonName: company.contactPersonName || "",
-      emailId: company.emailId || "",
-      address: company.address || "",
-      country: company.country || "",
-      regionState: company.regionState || "",
-      city: company.city || "",
-      pincode: company.pincode || "",
-      stateCode: company.stateCode || "",
-      contactNo: company.contactNo || "",
-      gstNo: company.gstNo || "",
-      website: company.website || "",
-      currency: company.currency || "",
-      financialYearFrom: company.financialYearFrom || "",
-      financialYearTo: company.financialYearTo || "",
-      cinNo: company.cinNo || "",
-      vatTin: company.vatTin || "",
-      cstTin: company.cstTin || "",
-      iec: company.iec || "",
-      invoicePrefix: company.invoicePrefix || "",
-      termsAndCond: company.termsAndCond || "",
-    });
+      companyName: company.company_name || '',
+      contactPersonName: company.contactable_person || '',
+      emailId: company.email_id || '',
+      address: company.address || '',
+      country: company.country || '',
+      regionState: company.state || '',
+      city: company.city || '',
+      pincode: company.pincode || '',
+      stateCode: company.statecode || '',
+      contactNo: company.phone || '',
+      gstNo: company.gst_no || '',
+      website: company.website || '',
+      currency: company.currency || 'INR',
+      financialYearFrom: company.financial_year_from || '',
+      financialYearTo: company.financial_year_to || '',
+      cinNo: company.cin_no || '',
+      vatTin: company.vat_tin || '',
+      cstTin: company.cst_tin || '',
+      iec: company.iec || '',
+      invoicePrefix: company.invoice_prefix || '',
+      termsAndCond: company.terms || '',
+    })
 
     // Ensure bankDetails is an array with at least one empty object
-    setBankDetails(
-      company.bankDetails && company.bankDetails.length
-        ? company.bankDetails.map((bank) => ({
-            _id: bank._id,
-            bankName: bank.bankName || "",
-            accountNo: bank.accountNo || "",
-            accountType: bank.accountType || "",
-            branchCity: bank.branchCity || "",
-            address: bank.address || "",
-            swift: bank.swift || "",
-            micr: bank.micr || "",
-            ifsc: bank.ifsc || "",
-          }))
-        : [
-            {
-              bankName: "",
-              accountNo: "",
-              accountType: "",
-              branchCity: "",
-              address: "",
-              swift: "",
-              micr: "",
-              ifsc: "",
-            },
-          ],
-    );
+    setBankDetails([
+      {
+        bankName: company.bank_name || '',
+        accountNo: company.ac_no || '',
+        accountType: company.ac_type || '',
+        branchCity: company.branch_city || '',
+        address: company.branch_name || '',
+        swift: company.swift_ac_no || '',
+        micr: company.micr_no || '',
+        ifsc: company.ifsc_code || '',
+      },
+    ])
 
     // Set logo preview
     setLogoPreview(
       company.logo ? `${import.meta.env.VITE_API_URL}/${company.logo}` : null,
-    );
+    )
 
     // Show form and switch to company details tab
-    setShowForm(true);
-    setShowSearch(false);
-    setActiveTab("companyDetails");
-  };
+    setShowForm(true)
+    setShowSearch(false)
+    setActiveTab('companyDetails')
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this company?")) {
+    if (window.confirm('Are you sure you want to delete this company?')) {
       try {
         await axios.delete(
           `${import.meta.env.VITE_API_URL}/api/companies/${id}`,
           getAuthHeaders(),
-        );
-        alert("Company deleted successfully!");
-        fetchCompanies();
+        )
+        alert('Company deleted successfully!')
+        fetchCompanies() // refresh the list
       } catch (e) {
         if (e.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        } else
-          alert(
-            `Delete failed: ${e.response?.data?.message || "Server error"}`,
-          );
+          localStorage.removeItem('token')
+          window.location.href = '/login'
+        } else {
+          alert(`Delete failed: ${e.response?.data?.message || 'Server error'}`)
+        }
       }
     }
-  };
+  }
 
-  const handleSearch = () => fetchCompanies();
+  const handleSearch = () => fetchCompanies()
   const handleReset = () => {
-    setSearchFields([{ field: "companyName", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    setTimeout(() => fetchCompanies(), 0);
-  };
+    setSearchFields([{ field: 'companyName', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    setTimeout(() => fetchCompanies(), 0)
+  }
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/companies/export`,
         {
           params,
-          responseType: "blob",
+          responseType: 'blob',
           ...getAuthHeaders(),
         },
-      );
+      )
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Companies_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `Companies_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   const searchOptions = [
-    { value: "companyName", label: "Company Name" },
-    { value: "contactPersonName", label: "Contact Person" },
-    { value: "emailId", label: "Email ID" },
-    { value: "city", label: "City" },
-  ];
+    { value: 'companyName', label: 'Company Name' },
+    { value: 'contactPersonName', label: 'Contact Person' },
+    { value: 'emailId', label: 'Email ID' },
+    { value: 'city', label: 'City' },
+  ]
 
   return (
     <div className="page-container">
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">
-          Company Management{" "}
+          Company Management{' '}
           <span className="text-success">({companies.length})</span>
         </h1>
         <div className="page-actions">
@@ -508,15 +531,15 @@ const CompanyPage = () => {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           <button
             type="button"
             className="btn-primary"
             onClick={() => {
-              resetForm();
-              setShowForm(true);
-              setShowSearch(false);
+              resetForm()
+              setShowForm(true)
+              setShowSearch(false)
             }}
           >
             <FaPlus /> Create New
@@ -545,7 +568,7 @@ const CompanyPage = () => {
             {isEditing ? (
               <span>Edit Company - {isEditing.companyName}</span>
             ) : (
-              "Create New Company"
+              'Create New Company'
             )}
           </h2>
 
@@ -613,7 +636,7 @@ const CompanyPage = () => {
                     <Form.Group controlId="address">
                       <Form.Label>Address</Form.Label>
                       <Form.Control
-                        as={"textarea"}
+                        as={'textarea'}
                         name="address"
                         value={formData.address}
                         onChange={handleInputChange}
@@ -708,7 +731,7 @@ const CompanyPage = () => {
                         value={formData.currency}
                         onChange={handleInputChange}
                       >
-                        <option value={"INR"}>INR</option>
+                        <option value={'INR'}>INR</option>
                       </Form.Select>
                     </Form.Group>
                   </Col>
@@ -844,10 +867,10 @@ const CompanyPage = () => {
                         src={logoPreview}
                         alt="logo preview"
                         style={{
-                          width: "180px",
-                          height: "200px",
-                          border: "1px solid #ddd",
-                          borderRadius: "4px",
+                          width: '180px',
+                          height: '200px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
                         }}
                       />
                     </Col>
@@ -872,8 +895,8 @@ const CompanyPage = () => {
                     variant="secondary"
                     className="me-2"
                     onClick={() => {
-                      resetForm();
-                      setShowForm(false);
+                      resetForm()
+                      setShowForm(false)
                     }}
                   >
                     Cancel
@@ -881,9 +904,9 @@ const CompanyPage = () => {
                   <Button
                     onClick={() => {
                       if (validateCompanyDetails()) {
-                        setActiveTab("bankDetails"); // switch only if validation passes
+                        setActiveTab('bankDetails') // switch only if validation passes
                       } else {
-                        alert("Please fix the validation errors.");
+                        alert('Please fix the validation errors.')
                       }
                     }}
                     variant="primary"
@@ -1041,7 +1064,7 @@ const CompanyPage = () => {
                     variant="outline-secondary"
                     type="button"
                     className="me-2"
-                    onClick={() => setActiveTab("companyDetails")}
+                    onClick={() => setActiveTab('companyDetails')}
                   >
                     Previous
                   </Button>
@@ -1050,14 +1073,14 @@ const CompanyPage = () => {
                     variant="secondary"
                     className="me-2"
                     onClick={() => {
-                      resetForm();
-                      setShowForm(false);
+                      resetForm()
+                      setShowForm(false)
                     }}
                   >
                     Cancel
                   </Button>
                   <Button type="submit" variant="primary">
-                    {isEditing ? "Update Company" : "Save Company"}
+                    {isEditing ? 'Update Company' : 'Save Company'}
                   </Button>
                 </div>
               </Tab>
@@ -1096,31 +1119,31 @@ const CompanyPage = () => {
                   </tr>
                 ) : (
                   companies.map((company) => (
-                    <tr key={company._id}>
+                    <tr key={company.id}>
                       <td>
                         <div className="info">
-                          {company.logo ? (
+                          {/* {company.logo ? (
                             <img
                               src={`${import.meta.env.VITE_API_URL}/${company.logo}`}
-                              alt={company.companyName}
+                              alt={company.company_name}
                               className="company-logo"
                             />
                           ) : (
-                            ""
-                          )}
+                            ''
+                          )} */}
                           <div>
                             <span className="company-name">
-                              {company.companyName}
+                              {company.company_name}
                             </span>
                           </div>
                         </div>
                       </td>
-                      <td>{company.contactPersonName || ""}</td>
+                      <td>{company.contactable_person || ''}</td>
                       <td>
-                        <span>{company.emailId}</span>
+                        <span>{company.email_id}</span>
                       </td>
-                      <td>{company.contactNo || ""}</td>
-                      <td>{company.city || ""}</td>
+                      <td>{company.phone || ''}</td>
+                      <td>{company.city || ''}</td>
                       <td>
                         <div className="table-actions">
                           <button
@@ -1131,7 +1154,7 @@ const CompanyPage = () => {
                             <FaPen />
                           </button>
                           <button
-                            onClick={() => handleDelete(company._id)}
+                            onClick={() => handleDelete(company.id)}
                             type="button"
                             className="icon-btn delete"
                           >
@@ -1148,7 +1171,7 @@ const CompanyPage = () => {
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default CompanyPage;
+export default CompanyPage

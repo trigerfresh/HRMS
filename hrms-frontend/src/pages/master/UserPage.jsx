@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import SearchPanel from "../../utils/FilterPanel";
-import { FaPen, FaTrashAlt, FaEye, FaPlus, FaSearch } from "react-icons/fa"; // Added FaPlus, FaSearch
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import SearchPanel from '../../utils/FilterPanel'
+import { FaPen, FaTrashAlt, FaEye, FaPlus, FaSearch } from 'react-icons/fa' // Added FaPlus, FaSearch
 import {
   Alert,
   Button,
@@ -12,122 +12,143 @@ import {
   Modal,
   Row,
   Table,
-} from "react-bootstrap";
+} from 'react-bootstrap'
+import defaultImg from './download.jfif'
 
-const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`
 
 const UserPage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [isEditing, setIsEditing] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [logoPreview, setLogoPreview] = useState(null);
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [isEditing, setIsEditing] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
+  const [logoPreview, setLogoPreview] = useState(null)
 
   // Dropdown and Form state
-  const [roles, setRoles] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [roles, setRoles] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [clients, setClients] = useState([])
+  const [sites, setSites] = useState([])
+  const [branches, setBranches] = useState([])
+  const [profileImageFile, setProfileImageFile] = useState(null)
   const initialFormData = {
-    name: "",
-    email: "",
-    password: "",
-    contactNo: "",
-    roleId: "",
-    address: "",
-    city: "",
-    pincode: "",
-    company: "",
-    branch: "",
-    selectedClients: [],
-  };
-  const [formData, setFormData] = useState(initialFormData);
-  const [viewUser, setViewUser] = useState(null); // For the view modal
+    first_name: '',
+    last_name: '',
+    fullname: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: '',
+    address: '',
+    city: '',
+    pincode: '',
+    company_id: '',
+    branch_id: '',
+  }
+  const [formData, setFormData] = useState(initialFormData)
+  const [viewUser, setViewUser] = useState(null) // For the view modal
 
   // Dual list box state
-  const [availableClients, setAvailableClients] = useState([]);
-  const [selectedClients, setSelectedClients] = useState([]);
+  const [availableClients, setAvailableClients] = useState([])
+  const [selectedClients, setSelectedClients] = useState([])
 
   // Search Panel State
   const [searchFields, setSearchFields] = useState([
-    { field: "name", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'name', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
   const userSearchOptions = [
-    { value: "name", label: "Name" },
-    { value: "email", label: "Email" },
-    { value: "contactNo", label: "Contact No" },
-  ];
+    { value: 'name', label: 'Name' },
+    { value: 'email', label: 'Email' },
+    { value: 'contactNo', label: 'Contact No' },
+  ]
 
   // Helper to get auth headers
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-  };
+    const token = localStorage.getItem('token')
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+  }
 
   // --- Data Fetching ---
   const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const res = await axios.get(`${API_BASE_URL}/users`, {
         params,
         ...getAuthHeaders(),
-      });
-      setUsers(res.data);
+      })
+      setUsers(res.data)
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to load branches.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to load branches.')
       // console.error("Failed to fetch users", error);
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // Single useEffect for all initial data
   useEffect(() => {
     const fetchInitialData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        // Fetch users and dropdown data in parallel for speed
-        const [companiesRes, rolesRes, clientsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/companies`, getAuthHeaders()),
-          axios.get(`${API_BASE_URL}/users/roles`, getAuthHeaders()),
-          axios.get(`${API_BASE_URL}/clients`, getAuthHeaders()),
-        ]);
-        setCompanies(companiesRes.data);
-        setRoles(rolesRes.data);
-        setClients(clientsRes.data.data);
-        // console.log(clientsRes);
-        setAvailableClients(clientsRes.data.data);
+        const companiesRes = await axios.get(
+          `${API_BASE_URL}/companies`,
+          getAuthHeaders(),
+        )
+
+        console.log('companiesRes', companiesRes.data)
+
+        const rolesRes = await axios.get(
+          `${API_BASE_URL}/users/roles`,
+          getAuthHeaders(),
+        )
+
+        console.log('rolesRes', rolesRes.data)
+
+        const clientsRes = await axios.get(
+          `${API_BASE_URL}/clients`,
+          getAuthHeaders(),
+        )
+
+        console.log('clientsRes', clientsRes.data)
+
+        setCompanies(companiesRes.data)
+        setRoles(rolesRes.data)
+        setClients(clientsRes.data.data)
+        setAvailableClients(clientsRes.data.data)
       } catch (error) {
-        if (error.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        } else setError("Failed to fetch dropdown data");
-        console.error("Failed to fetch dropdown data", error);
+        console.log('FULL ERROR =>', error)
+
+        console.log('ERROR RESPONSE =>', error.response)
+
+        console.log('ERROR DATA =>', error.response?.data)
+
+        console.log('ERROR STATUS =>', error.response?.status)
+
+        setError('Failed to fetch dropdown data')
       } finally {
-        await fetchUsers();
+        await fetchUsers()
       }
-    };
-    fetchInitialData();
+    }
+    fetchInitialData()
     // console.log(clients, availableClients);
-  }, []);
+  }, [])
+
   // Fetch branches only when the selected company changes
   useEffect(() => {
     if (formData.company) {
@@ -136,346 +157,350 @@ const UserPage = () => {
           const res = await axios.get(
             `${API_BASE_URL}/branches/by-company/${formData.company}`,
             getAuthHeaders(),
-          );
-          setBranches(res.data);
-        } catch (error) {
-          if (error.response?.status === 401) {
-            localStorage.removeItem("token");
-            window.location.href = "/login";
-          } else setError("Failed to fetch branches");
-          console.error("Failed to fetch branches", error);
-          setBranches([]); // Clear branches on error
-        }
-      };
-      fetchBranches();
-    } else {
-      setBranches([]); // Clear branches if no company is selected
-    }
-  }, [formData.company]);
+          )
 
+          setBranches(res.data)
+        } catch (error) {
+          console.error('Failed to fetch branches', error)
+          setBranches([])
+        }
+      }
+
+      fetchBranches()
+    } else {
+      setBranches([])
+    }
+  }, [formData.company])
   // --- Form Handlers ---
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
-    setFormData({ ...formData, [name]: value });
+    let updatedData = {
+      ...formData,
+      [name]: value,
+    }
 
-    const key = name;
-    if (validationErrors[key]) {
+    // Auto generate fullname
+    if (name === 'first_name' || name === 'last_name') {
+      updatedData.fullname =
+        `${updatedData.first_name} ${updatedData.last_name}`.trim()
+    }
+
+    setFormData(updatedData)
+
+    if (validationErrors[name]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [name]: '',
+      }))
     }
-  };
+  }
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setProfileImageFile(e.target.files[0]);
-    setLogoPreview(file ? URL.createObjectURL(file) : null);
-  };
+    const file = e.target.files[0]
+    setProfileImageFile(e.target.files[0])
+    setLogoPreview(file ? URL.createObjectURL(file) : null)
+  }
   const resetForm = () => {
-    setFormData(initialFormData);
-    setIsEditing(null);
-    setLogoPreview(null);
-    setValidationErrors({});
-    setSelectedClients([]);
-    setProfileImageFile(null);
-    setAvailableClients(clients);
-  };
+    setFormData(initialFormData)
+    setIsEditing(null)
+    setLogoPreview(null)
+    setValidationErrors({})
+    setSelectedClients([])
+    setProfileImageFile(null)
+    setAvailableClients(clients)
+  }
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
 
-    // Name validation
-    if (!formData.name.trim()) newErrors.name = "Full name is required";
+    // Full Name
+    if (!formData.fullname.trim()) {
+      newErrors.fullname = 'Full name is required'
+    }
 
-    // Email validation
+    // Email
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = 'Email is required'
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
+      newErrors.email = 'Invalid email format'
     }
 
-    // Password validation (required only when creating new user)
+    // Password
     if (!isEditing && !formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = 'Password is required'
     }
 
-    // Contact number validation (optional, but must be numeric if filled)
-    if (formData.contactNo && !/^\d{10}$/.test(formData.contactNo))
-      newErrors.contactNo = "Contact number must be 10 digits";
+    // Phone
+    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Contact number must be 10 digits'
+    }
 
-    // Role validation
-    if (!formData.roleId) newErrors.roleId = "Role is required";
+    // Role
+    if (!formData.role) {
+      newErrors.role = 'Role is required'
+    }
 
-    // Company & Branch validation
-    if (!formData.company) newErrors.company = "Company is required";
-    if (!formData.branch) newErrors.branch = "Branch is required";
+    // Company
+    if (!formData.company_id) {
+      newErrors.company_id = 'Company is required'
+    }
 
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
+    // Branch
+    if (!formData.branch_id) {
+      newErrors.branch_id = 'Branch is required'
+    }
+
+    // Pincode
+    const pincodeRegex = /^[1-9][0-9]{5}$/
+
     if (formData.pincode && !pincodeRegex.test(formData.pincode)) {
-      newErrors.pincode = "Please enter a valid 6-digit Pincode.";
+      newErrors.pincode = 'Please enter valid 6 digit pincode'
     }
-    setValidationErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // true if valid
-  };
+
+    setValidationErrors(newErrors)
+
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+
     if (!validateForm()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
-    } else {
-      setValidationErrors({});
-    }
-    const data = new FormData();
-    // Append form data
-    for (const key in formData) {
-      if (key === "selectedClients") {
-        const validClientIds = selectedClients
-          .filter((c) => c && c._id) // only valid objects
-          .map((c) => c._id);
-
-        data.append(key, JSON.stringify(validClientIds));
-      } else if (formData[key]) {
-        data.append(key, formData[key]);
-      }
-    }
-    if (profileImageFile) {
-      data.append("profileImage", profileImageFile);
+      alert('Please fix validation errors')
+      return
     }
 
-    // for (let [key, value] of data.entries()) {
-    //   console.log(`${key}:`, value);
-    // }
     try {
+      const data = new FormData()
+
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key])
+      })
+
+      if (profileImageFile) {
+        data.append('profileImage', profileImageFile)
+      }
+
       const config = {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
           ...getAuthHeaders().headers,
         },
-      };
-      if (isEditing) {
-        // UPDATE user logic
-        await axios.put(`${API_BASE_URL}/users/${isEditing._id}`, data, config);
-        alert("User updated successfully!");
-      } else {
-        // CREATE user logic
-        await axios.post(`${API_BASE_URL}/users`, data, config);
-        alert("User created successfully!");
       }
-      setShowForm(false);
-      setIsEditing(null); // Reset editing state
-      resetForm();
-      fetchUsers();
+
+      if (isEditing) {
+        await axios.put(`${API_BASE_URL}/users/${isEditing.id}`, data, config)
+
+        alert('User updated successfully')
+      } else {
+        await axios.post(`${API_BASE_URL}/users`, data, config)
+
+        alert('User created successfully')
+      }
+
+      setShowForm(false)
+
+      resetForm()
+
+      fetchUsers()
     } catch (error) {
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else
-        alert(
-          `Failed to ${isEditing ? "update" : "create"} user: ${
-            error.response?.data?.message || "Server error"
-          }`,
-        );
-      // console.error(error);
+      console.error(error)
+
+      alert(error.response?.data?.message || 'Failed to save user')
     }
-  };
+  }
 
   // === ACTION HANDLERS (UPDATED) ===
   const handleEdit = (user) => {
-    setIsEditing(user); // Store the ID of the user being edited
-    setValidationErrors({});
+    setIsEditing(user)
 
     setFormData({
-      ...user,
-      company: user.company?._id || "",
-      branch: user.branch?._id || "",
-      roleId: user.roleId?._id || "",
-      password: "", // Clear password field for security
-    });
-    const selectedIds = new Set(
-      (user.selectedClients || []).filter((c) => c && c._id).map((c) => c._id),
-    );
-    // console.log(user);
-    setAvailableClients(clients.filter((c) => c && !selectedIds.has(c._id)));
-    setSelectedClients(user.selectedClients || []);
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      fullname: user.fullname || '',
+      email: user.email || '',
+      password: '',
+      phone: user.phone || '',
+      role: user.role || '',
+      address: user.address || '',
+      city: user.city || '',
+      pincode: user.pincode || '',
+      company_id: user.company_id || '',
+      branch_id: user.branch_id || '',
+    })
+
     setLogoPreview(
-      user.profileImage
-        ? `${import.meta.env.VITE_API_URL}/${user.profileImage.replace(/\\/g, "/")}`
+      user.profile_image
+        ? `${import.meta.env.VITE_API_URL}/${user.profile_image.replace(/\\/g, '/')}`
         : null,
-    );
-    setProfileImageFile(
-      user.profileImage ? `${user.profileImage.replace(/\\/g, "/")}` : null,
-    );
-    setShowForm(true);
-    setShowSearch(false); // Hide search panel when editing
-  };
+    )
+
+    setShowForm(true)
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`${API_BASE_URL}/users/${id}`, getAuthHeaders());
-        alert("User deleted successfully");
-        fetchUsers();
+        await axios.delete(`${API_BASE_URL}/users/${id}`, getAuthHeaders())
+        alert('User deleted successfully')
+        fetchUsers()
       } catch (error) {
         if (error.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        } else alert("Failed to delete user");
+          localStorage.removeItem('token')
+          window.location.href = '/login'
+        } else alert('Failed to delete user')
         // console.error(error);
       }
     }
-  };
-  const handleView = (user) => setViewUser(user);
+  }
+  const handleView = (user) => setViewUser(user)
 
   // --- Search and Dual List Box Handlers ---
   const handleSearch = () => {
-    fetchUsers();
-  };
+    fetchUsers()
+  }
 
   useEffect(() => {
-    fetchUsers();
-  }, [searchFields, dateFilter]);
+    fetchUsers()
+  }, [searchFields, dateFilter])
 
   const resetSearch = () => {
-    setSearchFields([{ field: "email", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchUsers();
-  };
+    setSearchFields([{ field: 'email', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchUsers()
+  }
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/users/export`,
         {
           params,
-          responseType: "blob", // IMPORTANT
+          responseType: 'blob', // IMPORTANT
           ...getAuthHeaders(),
         },
-      );
+      )
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Users_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `Users_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   const moveItems = (source, dest, setSource, setDest, itemIds) => {
-    const itemsToMove = source.filter((item) => itemIds.includes(item._id));
-    const remainingSource = source.filter(
-      (item) => !itemIds.includes(item._id),
-    );
-    setSource(remainingSource);
+    const itemsToMove = source.filter((item) => itemIds.includes(item._id))
+    const remainingSource = source.filter((item) => !itemIds.includes(item._id))
+    setSource(remainingSource)
     setDest(
       [...dest, ...itemsToMove].sort((a, b) =>
         a.companyName.localeCompare(b.companyName),
       ),
-    );
-  };
+    )
+  }
   const handleSelectClients = (all = false) => {
     const selectedIds = all
       ? availableClients.map((c) => c._id)
       : Array.from(
-          document.getElementById("availableClients").selectedOptions,
-        ).map((opt) => opt.value);
+          document.getElementById('availableClients').selectedOptions,
+        ).map((opt) => opt.value)
     moveItems(
       availableClients,
       selectedClients,
       setAvailableClients,
       setSelectedClients,
       selectedIds,
-    );
-  };
+    )
+  }
   const handleDeselectClients = (all = false) => {
     const selectedIds = all
       ? selectedClients.map((c) => c._id)
       : Array.from(
-          document.getElementById("selectedClients").selectedOptions,
-        ).map((opt) => opt.value);
+          document.getElementById('selectedClients').selectedOptions,
+        ).map((opt) => opt.value)
     moveItems(
       selectedClients,
       availableClients,
       setSelectedClients,
       setAvailableClients,
       selectedIds,
-    );
-  };
+    )
+  }
 
   // === FETCH SITES BY SELECTED CLIENTS ===
   const fetchSitesByClientIds = async (selectedClientList) => {
     if (!selectedClientList || selectedClientList.length === 0) {
-      console.log("No clients selected for site fetch.");
-      return [];
+      console.log('No clients selected for site fetch.')
+      return []
     }
 
     try {
-      const clientIds = selectedClientList.map((c) => ({ $oid: c._id }));
+      const clientIds = selectedClientList.map((c) => ({ $oid: c._id }))
       const res = await axios.post(
         `${API_BASE_URL}/clients/sites/by-client-ids`,
         { clientIds },
         getAuthHeaders(),
-      );
+      )
       // console.log("Fetched Sites:", res.data.data);
-      return res.data.data;
+      return res.data.data
     } catch (error) {
-      console.error("Failed to fetch sites by client IDs:", error);
+      console.error('Failed to fetch sites by client IDs:', error)
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       }
-      return [];
+      return []
     }
-  };
+  }
 
   // Inside handleSelectClients or handleDeselectClients
   useEffect(() => {
     const fetchSites = async () => {
       try {
-        const sites = await fetchSitesByClientIds(selectedClients);
+        const sites = await fetchSitesByClientIds(selectedClients)
         // console.log("Sites for selected clients:", sites);
-        setSites(sites);
+        setSites(sites)
       } catch (error) {
-        console.error("Failed to fetch sites by client IDs:", error);
+        console.error('Failed to fetch sites by client IDs:', error)
         if (error.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         }
       }
-    };
+    }
 
     if (selectedClients.length > 0) {
-      fetchSites();
+      fetchSites()
     }
-  }, [selectedClients]);
+  }, [selectedClients])
 
   // --- RENDER ---
   return (
@@ -494,20 +519,21 @@ const UserPage = () => {
           {viewUser && (
             <>
               <p>
-                <strong>Name:</strong> {viewUser.name}
+                <strong>Name:</strong> {viewUser.first_name}{' '}
+                {viewUser.last_name}
               </p>
               <p>
                 <strong>Email:</strong> {viewUser.email}
               </p>
               <p>
-                <strong>Role:</strong> {viewUser.roleId?.name || "N/A"}
+                <strong>Role:</strong> {viewUser.role || 'N/A'}
               </p>
               <p>
-                <strong>Company:</strong>{" "}
-                {viewUser.company?.companyName || "N/A"}
+                <strong>Company:</strong>{' '}
+                {viewUser.company_name_actual || 'N/A'}
               </p>
               <p>
-                <strong>Branch:</strong> {viewUser.branch?.branchName || "N/A"}
+                <strong>Branch:</strong> {viewUser.branch_name_actual || 'N/A'}
               </p>
 
               {viewUser.profileImage && (
@@ -515,15 +541,15 @@ const UserPage = () => {
                   <Image
                     src={`${import.meta.env.VITE_API_URL}/${viewUser.profileImage.replace(
                       /\\/g,
-                      "/",
+                      '/',
                     )}`}
                     alt={viewUser.name}
                     roundedCircle
                     fluid
                     style={{
-                      width: "120px",
-                      height: "120px",
-                      objectFit: "cover",
+                      width: '120px',
+                      height: '120px',
+                      objectFit: 'cover',
                     }}
                   />
                 </div>
@@ -538,6 +564,7 @@ const UserPage = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
       <div className="page-header">
         <h1 className="page-title">
           User Management <span className="text-success">({users.length})</span>
@@ -547,15 +574,15 @@ const UserPage = () => {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           <button
             className="btn-primary"
             onClick={() => {
-              resetForm();
-              setIsEditing(null);
-              setShowForm(true);
-              setShowSearch(false);
+              resetForm()
+              setIsEditing(null)
+              setShowForm(true)
+              setShowSearch(false)
             }}
           >
             <FaPlus /> Create New
@@ -581,7 +608,7 @@ const UserPage = () => {
             {isEditing ? (
               <span>Edit User - {isEditing.name}</span>
             ) : (
-              "Create New User"
+              'Create New User'
             )}
           </h2>
           {Object.keys(validationErrors).length > 0 && (
@@ -597,7 +624,7 @@ const UserPage = () => {
                   <Form.Control
                     name="name"
                     placeholder="Enter full name"
-                    value={formData.name || ""}
+                    value={formData.fullname || ''}
                     onChange={handleInputChange}
                     isInvalid={!!validationErrors.name}
                   />
@@ -613,7 +640,7 @@ const UserPage = () => {
                     name="email"
                     placeholder="Email"
                     type="text"
-                    value={formData.email || ""}
+                    value={formData.email || ''}
                     onChange={handleInputChange}
                     isInvalid={!!validationErrors.email}
                   />
@@ -625,15 +652,15 @@ const UserPage = () => {
               <Col xs={12} sm={6} md={4} className="mb-3">
                 <Form.Group controlId="password">
                   <Form.Label>
-                    {isEditing ? "New password (optional)" : "Password *"}
+                    {isEditing ? 'New password (optional)' : 'Password *'}
                   </Form.Label>
                   <Form.Control
                     name="password"
                     placeholder={
-                      isEditing ? "Enter new password (optional)" : "Password"
+                      isEditing ? 'Enter new password (optional)' : 'Password'
                     }
                     type="password"
-                    value={formData.password || ""}
+                    value={formData.password || ''}
                     onChange={handleInputChange}
                     isInvalid={!isEditing && !!validationErrors.password}
                   />
@@ -646,14 +673,14 @@ const UserPage = () => {
                 <Form.Group controlId="contactNo">
                   <Form.Label>Contact No</Form.Label>
                   <Form.Control
-                    name="contactNo"
+                    name="phone"
                     placeholder="Contact No"
-                    value={formData.contactNo || ""}
-                    isInvalid={!!validationErrors.contactNo}
+                    value={formData.phone || ''}
+                    isInvalid={!!validationErrors.phone}
                     onChange={handleInputChange}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.contactNo}
+                    {validationErrors.phone}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -662,9 +689,9 @@ const UserPage = () => {
                   <Form.Label>Address</Form.Label>
                   <Form.Control
                     name="address"
-                    as={"textarea"}
+                    as={'textarea'}
                     placeholder="Address"
-                    value={formData.address || ""}
+                    value={formData.address || ''}
                     onChange={handleInputChange}
                     rows="3"
                   />
@@ -676,7 +703,7 @@ const UserPage = () => {
                   <Form.Control
                     name="city"
                     placeholder="City"
-                    value={formData.city || ""}
+                    value={formData.city || ''}
                     onChange={handleInputChange}
                   />
                 </Form.Group>
@@ -687,7 +714,7 @@ const UserPage = () => {
                   <Form.Control
                     name="pincode"
                     placeholder="Pincode"
-                    value={formData.pincode || ""}
+                    value={formData.pincode || ''}
                     onChange={handleInputChange}
                     isInvalid={!!validationErrors.pincode}
                   />
@@ -700,20 +727,20 @@ const UserPage = () => {
                 <Form.Group controlId="roleId">
                   <Form.Label>Role *</Form.Label>
                   <Form.Select
-                    name="roleId"
-                    value={formData.roleId || ""}
+                    name="role"
+                    value={formData.role || ''}
                     onChange={handleInputChange}
-                    isInvalid={!!validationErrors.roleId}
+                    isInvalid={!!validationErrors.role}
                   >
                     <option value="">Select Role</option>
                     {roles.map((role) => (
-                      <option key={role._id} value={role._id}>
-                        {role.name}
+                      <option key={role.id} value={role.id}>
+                        {role.role_name}
                       </option>
                     ))}
                   </Form.Select>
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.roleId}
+                    {validationErrors.role}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -723,14 +750,14 @@ const UserPage = () => {
                   <Form.Label>Company *</Form.Label>
                   <Form.Select
                     name="company"
-                    value={formData.company || ""}
+                    value={formData.company_id || ''}
                     onChange={handleInputChange}
-                    isInvalid={!!validationErrors.company}
+                    isInvalid={!!validationErrors.company_id}
                   >
                     <option value="">Select Company</option>
                     {companies.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.companyName}
+                      <option key={c.id} value={c.id}>
+                        {c.company_name}
                       </option>
                     ))}
                   </Form.Select>
@@ -745,14 +772,14 @@ const UserPage = () => {
                   <Form.Select
                     name="branch"
                     id="branch"
-                    value={formData.branch || ""}
+                    value={formData.branch_id || ''}
                     onChange={handleInputChange}
-                    isInvalid={!!validationErrors.branch}
+                    isInvalid={!!validationErrors.branch_id}
                   >
                     <option value="">Select Branch</option>
                     {branches.map((b) => (
-                      <option key={b._id} value={b._id}>
-                        {b.branchName}
+                      <option key={b.id} value={b.id}>
+                        {b.branch_name}
                       </option>
                     ))}
                   </Form.Select>
@@ -778,10 +805,10 @@ const UserPage = () => {
                     src={logoPreview}
                     alt="logo preview"
                     style={{
-                      width: "180px",
-                      height: "200px",
-                      border: "1px solid #ddd",
-                      borderRadius: "4px",
+                      width: '180px',
+                      height: '200px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
                     }}
                   />
                 )}
@@ -805,8 +832,8 @@ const UserPage = () => {
                     className="dual-list-select"
                   >
                     {availableClients.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.companyName}
+                      <option key={c.id} value={c.id}>
+                        {c.company_name}
                       </option>
                     ))}
                   </Form.Select>
@@ -864,8 +891,8 @@ const UserPage = () => {
                     {selectedClients
                       .filter((c) => c)
                       .map((c) => (
-                        <option key={c?._id} value={c?._id}>
-                          {c?.companyName}
+                        <option key={c?.id} value={c?.id}>
+                          {c?.company_name}
                           {/* {c?._id} */}
                         </option>
                       ))}
@@ -880,15 +907,15 @@ const UserPage = () => {
                 variant="secondary"
                 className="me-2"
                 onClick={() => {
-                  setShowForm(false);
-                  setIsEditing(null);
-                  resetForm();
+                  setShowForm(false)
+                  setIsEditing(null)
+                  resetForm()
                 }}
               >
                 Cancel
               </Button>
               <Button type="submit" className="primary">
-                {isEditing ? "Update User" : "Save User"}
+                {isEditing ? 'Update User' : 'Save User'}
               </Button>
             </div>
           </Form>
@@ -925,30 +952,35 @@ const UserPage = () => {
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user._id}>
+                    <tr key={user.id}>
                       <td>
                         <div className="info">
                           <img
                             src={
-                              user.profileImage
-                                ? `${import.meta.env.VITE_API_URL}/${user.profileImage.replace(
+                              user.profile_image
+                                ? `${import.meta.env.VITE_API_URL}/${user.profile_image.replace(
                                     /\\/g,
-                                    "/",
+                                    '/',
                                   )}`
-                                : ""
+                                : defaultImg
                             }
-                            alt={user.name}
+                            alt={user.first_name}
                             className="user-avatar"
+                            onError={(e) => {
+                              e.target.src = defaultImg
+                            }}
                           />
                           <div className="user-details">
-                            <span className="user-name">{user.name}</span>
+                            <span className="user-name">
+                              {user.first_name} {user.last_name}
+                            </span>
                           </div>
                         </div>
                       </td>
-                      <td>{user.email || "N/A"}</td>
-                      <td>{user.roleId?.name || "N/A"}</td>
-                      <td>{user.branch?.branchName || "N/A"}</td>
-                      <td>{user.contactNo || "N/A"}</td>
+                      <td>{user.email || 'N/A'}</td>
+                      <td>{user.role_name || 'N/A'}</td>
+                      <td>{user.branch_name || 'N/A'}</td>
+                      <td>{user.phone || 'N/A'}</td>
                       <td>
                         <div className="table-actions">
                           <button
@@ -967,7 +999,7 @@ const UserPage = () => {
                           </button>
                           <button
                             className="icon-btn delete"
-                            onClick={() => handleDelete(user._id)}
+                            onClick={() => handleDelete(user.id)}
                             title="Delete"
                           >
                             <FaTrashAlt />
@@ -983,7 +1015,7 @@ const UserPage = () => {
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default UserPage;
+export default UserPage

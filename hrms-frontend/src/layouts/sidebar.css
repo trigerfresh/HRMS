@@ -1,0 +1,63 @@
+/* Menu List */
+.menu-link:hover {
+  background-color: #374151; /* Slightly lighter gray */
+}
+
+.menu-link.active {
+  background-color: #4b5563; /* Active highlight */
+}
+
+.menu-icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+/* Dropdown chevron */
+.dropdown-icon {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* Submenu List */
+.submenu-list {
+  list-style: none;
+  padding-left: 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.menu-link.clickable + .submenu-list {
+  max-height: 500px; /* Enough to show all submodules */
+}
+
+/* Submenu Link */
+.submenu-link {
+  display: block;
+  padding: 8px 20px;
+  /* color: #0000; Lighter gray */
+  font-size: 14px;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition:
+    background 0.2s,
+    border-left 0.2s;
+}
+
+.submenu-link:hover {
+  background-color: #374151;
+  border-left: 2px solid #3b82f6; /* Blue indicator */
+}
+
+.submenu-link.active {
+  background-color: #4b5563;
+  border-left: 2px solid #3b82f6;
+}
+
+/* Loading & Error text */
+.loading-text,
+.error-text {
+  padding: 12px 20px;
+  /* color: #0000; */
+  font-size: 14px;
+}
