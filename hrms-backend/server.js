@@ -4,15 +4,19 @@ const cors = require('cors')
 const path = require('path') // ADDED: File paths sobat kam karnyसाठी 'path' module import kara.
 dotenv.config()
 
-const { connectDB } = require('./config/db.js')
+const { poolPromise } = require('./config/db.js')
 const authRoutes = require('./routes/authRoutes')
 const companyRoutes = require('./routes/companyRoutes')
 const branchRoutes = require('./routes/branchRoutes')
 const permissionRoutes = require('./routes/permissionRoutes')
 const userRoutes = require('./routes/userRoutes.js')
+const clientRoutes = require('./routes/clientRoutes.js')
+const holidayRoutes = require('./routes/holidayRoutes.js')
+const chargesRoutes = require('./routes/chargesRoutes.js')
+const workOrderType = require('./routes/workOrderTypeRoutes.js')
 
 // // Connect DB
-connectDB()
+// connectDB()
 
 const app = express()
 
@@ -32,6 +36,10 @@ app.use('/api/companies', companyRoutes)
 app.use('/api/branches', branchRoutes)
 app.use('/api/permissions', permissionRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/clients', clientRoutes)
+app.use('/api/holidays', holidayRoutes)
+app.use('/api/charges', chargesRoutes)
+app.use('/api/workOrderType', workOrderType)
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 

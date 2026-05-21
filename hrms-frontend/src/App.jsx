@@ -1,57 +1,57 @@
 // src/App.jsx (Updated with all Master Routes)
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 // Layout and Authentication
-import MainLayout from "./layouts/MainLayout";
+import MainLayout from './layouts/MainLayout'
 
 // Pages
-import Login from "./pages/auth/Login";
-import Dashboard from "./pages/dashboard/Dashboard";
+import Login from './pages/auth/Login'
+import Dashboard from './pages/dashboard/Dashboard'
 // === MASTER Pages ===
-import CompanyPage from "./pages/master/CompanyPage";
-import BranchPage from "./pages/master//BranchPage";
-import UserPage from "./pages/master/UserPage";
-import UserAccessPage from "./pages/master/UserAccessPage"; // <-- IMPORT KARA
-import ClientPage from "./pages/addNew/ClientPage";
-import Holiday from "./pages/addNew/Holiday";
-import EmployeeTypePage from "./pages/employee/EmployeeTypePage";
-import EmployeePages from "./pages/employee/EmployeePages";
-import AddEmployee from "./components/employee/employeePage/AddEmployee"; // Path to your form import AttendanceByEmployeePage from './pages/AttendanceByEmployeePage'; // <-- IMPORT THIS
-import AttendanceByEmployeePage from "./pages/attendance/AttendanceByEmployeePage";
-import ManpowerAttendance from "./pages/attendance/ManpowerAttendance"; // <-- IMPORT THIS
-import SalaryTemplatePage from "./pages/addNew/SalaryTemplatePage";
-import ChargesMasterPage from "./pages/addNew/ChargesMasterPage";
-import BillingPage from "./pages/billing/BillingPage";
-import UploadWagesSheet from "./pages/salary/UploadWagesSheet";
-import VoucherPage from "./pages/vouchers/VoucherPage";
-import SalarySlipByEmployeePage from "./pages/salary/SalarySlipByEmployeePage";
-import SalarySlipBySitePage from "./pages/salary/SalarySlipBySitePage";
-import MISPage from "./pages/reports/MISPage";
-import Ledger from "./pages/reports/Ledger";
-import Invoice from "./components/attendance/Invoice";
-import AttendancePrintPage from "./components/attendance/AttendancePrintPage";
-import PrintPaymentHistory from "./components/billing/PrintPaymentHistory";
-import PrintInvoice from "./components/billing/PrintInvoice";
-import ClientWorkOrder from "./pages/workOrder/client/ClientWorkOrder";
-import WorkOrderTypePage from "./pages/addNew/WorkOrderTypePage";
-import TotalClientWorkOrder from "./components/workOrder/client/TotalClientWorkOrder";
-import EquipmentTypeMasterPage from "./pages/addNew/EquipmentMasterPage";
-import GangMasterPage from "./pages/addNew/GangMasterPage";
-import VendorsMaster from "./pages/addNew/VendorsMaster";
-import B2BSaleBill from "./pages/vendor/B2BSaleBill";
-import B2BPurchaseBill from "./pages/vendor/B2BPurchaseBill";
-import B2BDebitNote from "./pages/vendor/B2BDebitNote";
-import B2BCreditNote from "./pages/vendor/B2BCreditNote";
-import { PrintSaleBill } from "./components/vendor/saleBill/PrintSaleBill";
-import PrintCreditNote from "./components/vendor/creditNote/PrintCreditNote";
-import PrintDebitNote from "./components/vendor/debitNote/PrintDebitNote";
-import PrintClientWorkOrder from "./components/workOrder/client/PrintClientWorkOrder";
+import CompanyPage from './pages/master/CompanyPage'
+import BranchPage from './pages/master//BranchPage'
+import UserPage from './pages/master/UserPage'
+import UserAccessPage from './pages/master/UserAccessPage' // <-- IMPORT KARA
+import ClientPage from './pages/addNew/ClientPage'
+import Holiday from './pages/addNew/Holiday'
+import EmployeeTypePage from './pages/employee/EmployeeTypePage'
+import EmployeePages from './pages/employee/EmployeePages'
+import AddEmployee from './components/employee/employeePage/AddEmployee' // Path to your form import AttendanceByEmployeePage from './pages/AttendanceByEmployeePage'; // <-- IMPORT THIS
+import AttendanceByEmployeePage from './pages/attendance/AttendanceByEmployeePage'
+import ManpowerAttendance from './pages/attendance/ManpowerAttendance' // <-- IMPORT THIS
+import SalaryTemplatePage from './pages/addNew/SalaryTemplatePage'
+import ChargesMasterPage from './pages/addNew/ChargesMasterPage'
+import BillingPage from './pages/billing/BillingPage'
+import UploadWagesSheet from './pages/salary/UploadWagesSheet'
+import VoucherPage from './pages/vouchers/VoucherPage'
+import SalarySlipByEmployeePage from './pages/salary/SalarySlipByEmployeePage'
+import SalarySlipBySitePage from './pages/salary/SalarySlipBySitePage'
+import MISPage from './pages/reports/MISPage'
+import Ledger from './pages/reports/Ledger'
+import Invoice from './components/attendance/Invoice'
+import AttendancePrintPage from './components/attendance/AttendancePrintPage'
+import PrintPaymentHistory from './components/billing/PrintPaymentHistory'
+import PrintInvoice from './components/billing/PrintInvoice'
+import ClientWorkOrder from './pages/workOrder/client/ClientWorkOrder'
+import WorkOrderTypePage from './pages/addNew/WorkOrderTypePage'
+import TotalClientWorkOrder from './components/workOrder/client/TotalClientWorkOrder'
+import EquipmentTypeMasterPage from './pages/addNew/EquipmentMasterPage'
+import GangMasterPage from './pages/addNew/GangMasterPage'
+import VendorsMaster from './pages/addNew/VendorsMaster'
+import B2BSaleBill from './pages/vendor/B2BSaleBill'
+import B2BPurchaseBill from './pages/vendor/B2BPurchaseBill'
+import B2BDebitNote from './pages/vendor/B2BDebitNote'
+import B2BCreditNote from './pages/vendor/B2BCreditNote'
+import { PrintSaleBill } from './components/vendor/saleBill/PrintSaleBill'
+import PrintCreditNote from './components/vendor/creditNote/PrintCreditNote'
+import PrintDebitNote from './components/vendor/debitNote/PrintDebitNote'
+import PrintClientWorkOrder from './components/workOrder/client/PrintClientWorkOrder'
 
 // PrivateRoute Component (Login check sathi)
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
-};
+  const token = localStorage.getItem('token')
+  return token ? children : <Navigate to="/login" />
+}
 
 export default function App() {
   return (
@@ -78,7 +78,7 @@ export default function App() {
           <Route path="/master/companies" element={<CompanyPage />} />
           <Route path="/master/branches" element={<BranchPage />} />
           <Route path="/master/users" element={<UserPage />} />
-          <Route path="/master/user-access" element={<UserAccessPage />} />
+          <Route path="/master/user-role-access" element={<UserAccessPage />} />
           {/* ======================================================= */}
 
           {/* ADD NEW aani baki modules che routes ithe add karal */}
@@ -168,5 +168,5 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }

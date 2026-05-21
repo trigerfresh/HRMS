@@ -111,26 +111,35 @@ const UserPage = () => {
           getAuthHeaders(),
         )
 
-        console.log('companiesRes', companiesRes.data)
+        // console.log('companiesRes', companiesRes.data)
 
         const rolesRes = await axios.get(
           `${API_BASE_URL}/users/roles`,
           getAuthHeaders(),
         )
 
-        console.log('rolesRes', rolesRes.data)
+        // console.log('rolesRes', rolesRes.data)
 
         const clientsRes = await axios.get(
-          `${API_BASE_URL}/clients`,
+          `${API_BASE_URL}/users/clients`,
           getAuthHeaders(),
         )
 
-        console.log('clientsRes', clientsRes.data)
+        const clientData = Array.isArray(clientsRes.data?.data)
+          ? clientsRes.data.data
+          : Array.isArray(clientsRes.data)
+            ? clientsRes.data
+            : []
+
+        setClients(clientData)
+        setAvailableClients(clientData)
+
+        // console.log('clientsRes', clientsRes.data)
 
         setCompanies(companiesRes.data)
         setRoles(rolesRes.data)
-        setClients(clientsRes.data.data)
-        setAvailableClients(clientsRes.data.data)
+        // setClients(clientsRes.data.data)
+        // setAvailableClients(clientsRes.data.data)
       } catch (error) {
         console.log('FULL ERROR =>', error)
 
@@ -151,49 +160,49 @@ const UserPage = () => {
 
   // Fetch branches only when the selected company changes
   useEffect(() => {
-    if (formData.company) {
-      const fetchBranches = async () => {
-        try {
-          const res = await axios.get(
-            `${API_BASE_URL}/branches/by-company/${formData.company}`,
-            getAuthHeaders(),
-          )
-
-          setBranches(res.data)
-        } catch (error) {
-          console.error('Failed to fetch branches', error)
+    const fetchBranches = async () => {
+      try {
+        if (!formData.company_id) {
           setBranches([])
+          return
         }
-      }
 
-      fetchBranches()
-    } else {
-      setBranches([])
+        console.log('SELECTED COMPANY =>', formData.company_id)
+
+        const token = localStorage.getItem('token')
+
+        const res = await axios.get(
+          `${API_BASE_URL}/branches/by-company/${formData.company_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        )
+
+        console.log('BRANCH API RESPONSE =>', res.data)
+
+        setBranches(res.data || [])
+      } catch (error) {
+        console.error('BRANCH FETCH ERROR =>', error)
+        setBranches([])
+      }
     }
-  }, [formData.company])
+
+    fetchBranches()
+  }, [formData.company_id])
   // --- Form Handlers ---
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
 
-    let updatedData = {
-      ...formData,
+    console.log('FIELD =>', name)
+    console.log('VALUE =>', value)
+
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    }
-
-    // Auto generate fullname
-    if (name === 'first_name' || name === 'last_name') {
-      updatedData.fullname =
-        `${updatedData.first_name} ${updatedData.last_name}`.trim()
-    }
-
-    setFormData(updatedData)
-
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }))
-    }
+    }))
   }
 
   const handleFileChange = (e) => {
@@ -201,6 +210,7 @@ const UserPage = () => {
     setProfileImageFile(e.target.files[0])
     setLogoPreview(file ? URL.createObjectURL(file) : null)
   }
+
   const resetForm = () => {
     setFormData(initialFormData)
     setIsEditing(null)
@@ -313,6 +323,8 @@ const UserPage = () => {
 
   // === ACTION HANDLERS (UPDATED) ===
   const handleEdit = (user) => {
+    console.log('EDIT USER =>', user)
+
     setIsEditing(user)
 
     setFormData({
@@ -326,8 +338,8 @@ const UserPage = () => {
       address: user.address || '',
       city: user.city || '',
       pincode: user.pincode || '',
-      company_id: user.company_id || '',
-      branch_id: user.branch_id || '',
+      company_id: user.company_id ? String(user.company_id) : '',
+      branch_id: user.branch_id ? String(user.branch_id) : '',
     })
 
     setLogoPreview(
@@ -417,18 +429,25 @@ const UserPage = () => {
   }
 
   const moveItems = (source, dest, setSource, setDest, itemIds) => {
-    const itemsToMove = source.filter((item) => itemIds.includes(item._id))
-    const remainingSource = source.filter((item) => !itemIds.includes(item._id))
+    const itemsToMove = source.filter((item) =>
+      itemIds.includes(String(item.id)),
+    )
+
+    const remainingSource = source.filter(
+      (item) => !itemIds.includes(String(item.id)),
+    )
+
     setSource(remainingSource)
+
     setDest(
       [...dest, ...itemsToMove].sort((a, b) =>
-        a.companyName.localeCompare(b.companyName),
+        (a.company_name || '').localeCompare(b.company_name || ''),
       ),
     )
   }
   const handleSelectClients = (all = false) => {
     const selectedIds = all
-      ? availableClients.map((c) => c._id)
+      ? availableClients.map((c) => String(c.id))
       : Array.from(
           document.getElementById('availableClients').selectedOptions,
         ).map((opt) => opt.value)
@@ -442,7 +461,7 @@ const UserPage = () => {
   }
   const handleDeselectClients = (all = false) => {
     const selectedIds = all
-      ? selectedClients.map((c) => c._id)
+      ? selectedClients.map((c) => String(c.id))
       : Array.from(
           document.getElementById('selectedClients').selectedOptions,
         ).map((opt) => opt.value)
@@ -536,10 +555,10 @@ const UserPage = () => {
                 <strong>Branch:</strong> {viewUser.branch_name_actual || 'N/A'}
               </p>
 
-              {viewUser.profileImage && (
+              {viewUser.profile_image && (
                 <div className="text-center mt-3">
                   <Image
-                    src={`${import.meta.env.VITE_API_URL}/${viewUser.profileImage.replace(
+                    src={`${import.meta.env.VITE_API_URL}/${viewUser.profile_image.replace(
                       /\\/g,
                       '/',
                     )}`}
@@ -622,7 +641,7 @@ const UserPage = () => {
                 <Form.Group controlId="name">
                   <Form.Label>Full Name *</Form.Label>
                   <Form.Control
-                    name="name"
+                    name="fullname"
                     placeholder="Enter full name"
                     value={formData.fullname || ''}
                     onChange={handleInputChange}
@@ -733,12 +752,14 @@ const UserPage = () => {
                     isInvalid={!!validationErrors.role}
                   >
                     <option value="">Select Role</option>
+
                     {roles.map((role) => (
-                      <option key={role.id} value={role.id}>
+                      <option key={role.id} value={role.role_name}>
                         {role.role_name}
                       </option>
                     ))}
                   </Form.Select>
+
                   <Form.Control.Feedback type="invalid">
                     {validationErrors.role}
                   </Form.Control.Feedback>
@@ -749,20 +770,22 @@ const UserPage = () => {
                 <Form.Group controlId="company">
                   <Form.Label>Company *</Form.Label>
                   <Form.Select
-                    name="company"
+                    name="company_id"
                     value={formData.company_id || ''}
                     onChange={handleInputChange}
                     isInvalid={!!validationErrors.company_id}
                   >
                     <option value="">Select Company</option>
+
                     {companies.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.company_name}
                       </option>
                     ))}
                   </Form.Select>
+
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.company}
+                    {validationErrors.company_id}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -770,21 +793,22 @@ const UserPage = () => {
                 <Form.Group controlId="branch">
                   <Form.Label>Branch *</Form.Label>
                   <Form.Select
-                    name="branch"
-                    id="branch"
+                    name="branch_id"
                     value={formData.branch_id || ''}
                     onChange={handleInputChange}
                     isInvalid={!!validationErrors.branch_id}
                   >
                     <option value="">Select Branch</option>
+
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.branch_name}
                       </option>
                     ))}
                   </Form.Select>
+
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.branch}
+                    {validationErrors.branch_id}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -972,14 +996,14 @@ const UserPage = () => {
                           />
                           <div className="user-details">
                             <span className="user-name">
-                              {user.first_name} {user.last_name}
+                              {user.fullname || user.first_name}
                             </span>
                           </div>
                         </div>
                       </td>
                       <td>{user.email || 'N/A'}</td>
-                      <td>{user.role_name || 'N/A'}</td>
-                      <td>{user.branch_name || 'N/A'}</td>
+                      <td>{user.role || 'N/A'}</td>
+                      <td>{user.branch_name || user.branch_id || 'N/A'}</td>
                       <td>{user.phone || 'N/A'}</td>
                       <td>
                         <div className="table-actions">

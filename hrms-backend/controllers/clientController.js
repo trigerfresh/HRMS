@@ -1,22 +1,31 @@
-const Client = require("../models/Client");
-const User = require("../models/User");
-const SiteDetail = require("../models/SiteDetail");
-const ChargesByRank = require("../models/ChargesByRank");
-const OtherCharges = require("../models/OtherCharges");
-const mongoose = require("mongoose");
-const xlsx = require("xlsx");
-const WORateChart = require("../models/WORateChart");
-const Employee = require("../models/Employee");
+const { poolPromise, sql } = require('../config/db')
+const xlsx = require('xlsx')
+const Client = require('../models/Client')
+const User = require('../models/User')
+const SiteDetail = require('../models/SiteDetail')
+const ChargesByRank = require('../models/ChargesByRank')
+const OtherCharges = require('../models/OtherCharges')
+const mongoose = require('mongoose')
+const WORateChart = require('../models/WORateChart')
+const Employee = require('../models/Employee')
 
 // @desc    Create a new client
 // @route   POST /api/clients
 
+// controllers/clientController.js
+
+// ==========================================
+// CREATE CLIENT (MSSQL VERSION)
+// ==========================================
 exports.createClient = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const pool = await poolPromise
+  const transaction = new sql.Transaction(pool)
 
   try {
-    const createdBy = req.user.id;
+    await transaction.begin()
+
+    const createdBy = Number(req.user.id)
+
     const {
       companyName,
       contactPersonName,
@@ -33,553 +42,979 @@ exports.createClient = async (req, res) => {
       companyBankName,
       otherInfo,
       termsAndConditions,
+
       bankName,
       accountNo,
       ifscCode,
       micrCode,
       branch,
       bankCity,
-      // bankDetails = [],
+
       sites = [],
-    } = req.body;
+    } = req.body
 
-    // console.log(bankDetails, req.)
+    // ==========================================
+    // CHECK DUPLICATE COMPANY
+    // ==========================================
+    const duplicateCompany = await transaction
+      .request()
+      .input('company_name', sql.VarChar, companyName).query(`
+        SELECT TOP 1 id
+        FROM new_client
+        WHERE company_name = @company_name
+        AND active = 0
+      `)
 
-    // 🔍 Check duplicates
-    const [clientExist, emailExist] = await Promise.all([
-      Client.findOne({ companyName }),
-      Client.findOne({ emailId }),
-    ]);
+    if (duplicateCompany.recordset.length > 0) {
+      await transaction.rollback()
 
-    if (clientExist)
-      return res.status(400).json({ message: "Company name already exists" });
-    if (emailExist)
-      return res.status(400).json({ message: "Email ID already exists" });
-
-    // 🔹 Generate site-level code (unique per site)
-    const siteCount = await SiteDetail.countDocuments();
-    let currentSiteNumber = siteCount; // track for multiple sites in same request
-
-    const clientBankDetails = {
-      bankName: bankName || "",
-      accountNo: accountNo || "",
-      ifscCode: ifscCode || "",
-      branch: branch || "",
-      city: bankCity || "",
-      micrCode: micrCode || "",
-    };
-
-    const normalizedBillingCompany =
-      billingCompany && billingCompany.trim() !== ""
-        ? billingCompany
-        : undefined;
-
-    const normalizedCompanyBankName =
-      companyBankName && String(companyBankName).trim() !== ""
-        ? companyBankName
-        : undefined;
-
-    // 🔹 Create Client
-    const newClient = await Client.create(
-      [
-        {
-          companyName,
-          contactPersonName,
-          contactNo,
-          emailId,
-          address,
-          city,
-          state,
-          pincode,
-          gstStateCode,
-          gstNo,
-          sacCode,
-          billingCompany: normalizedBillingCompany,
-          companyBankName: normalizedCompanyBankName,
-          otherInfo,
-          termsAndConditions,
-          bankDetails: clientBankDetails,
-          created_by: createdBy,
-        },
-      ],
-      { session }
-    );
-
-    const client = newClient[0];
-
-    // 🔹 Save each site, then rates & other details linked to it
-    for (const s of sites) {
-      currentSiteNumber += 1;
-      const clientCode = `C${String(currentSiteNumber).padStart(3, "0")}`;
-
-      const siteDoc = await SiteDetail.create(
-        [
-          {
-            clientId: client._id,
-            siteName: s.siteName,
-            workOrderNo: s.workOrderNo,
-            clientCode: clientCode,
-            contactPersonName: s.contactPersonName,
-            contactNo: s.contactNo,
-            emailId: s.emailId,
-            address: s.address,
-            billingAddress: s.billingAddress,
-            city: s.city,
-            state: s.state,
-            country: s.country,
-            locationName: s.locationName,
-            locationStartDate: s.locationStartDate
-              ? new Date(s.locationStartDate)
-              : null,
-            salesPersonName: s.salesPersonName,
-            salesPersonEmailId: s.salesPersonEmailId,
-            salesPersonContactNo: s.salesPersonContactNo,
-            billCycleDate: s.billCycleDate,
-            status: s.status,
-            cgst: parseFloat(s.cgst) || 0,
-            sgst: parseFloat(s.sgst) || 0,
-            igst: parseFloat(s.igst) || 0,
-            expectedBillingAmount: parseFloat(s.expectedBillingAmount) || 0,
-            daysForBilling: parseInt(s.daysForBilling) || 0,
-            viewOTHours: !!s.viewOTHours,
-            attachWagesSHeet: !!s.attachWagesSHeet,
-            roundOffAmount: !!s.roundOffAmount,
-            billWithoutRank: !!s.billWithoutRank,
-            created_by: createdBy,
-          },
-        ],
-        { session }
-      );
-
-      const site = siteDoc[0];
-
-      // 🔹 Insert ChargesByRank (Rates)
-      if (Array.isArray(s.rates) && s.rates.length > 0) {
-        const rateDocs = s.rates.map((r) => ({
-          clientId: client._id,
-          siteId: site._id,
-          empType: r.empType,
-          hours: Number(r.hours) || 0,
-          nos: Number(r.nos) || 0,
-          basic: Number(r.basic) || 0,
-          hra: Number(r.hra) || 0,
-          da: Number(r.da) || 0,
-          specialAllowance: Number(r.specialAllowance) || 0,
-          otherAllowance: Number(r.otherAllowance) || 0,
-          lww: Number(r.lww) || 0,
-          bonus: Number(r.bonus) || 0,
-          costPerHeadGross: Number(r.costPerHeadGross) || 0,
-          serviceChargesType: r.serviceChargesType,
-          serviceCharges: Number(r.serviceCharges) || 0,
-          perDayRate: Number(r.perDayRate) || 0,
-          otRate: Number(r.otRate) || 0,
-          leaveWages: Number(r.leaveWages) || 0,
-          uniformWashing: Number(r.uniformWashing) || 0,
-          anyOther: Number(r.anyOther) || 0,
-          created_by: createdBy,
-        }));
-        await ChargesByRank.insertMany(rateDocs, { session });
-      }
-
-      // 🔹 Insert OtherCharges (Other Details)
-      if (Array.isArray(s.otherDetails) && s.otherDetails.length > 0) {
-        const otherDocs = s.otherDetails.map((d) => ({
-          clientId: client._id,
-          siteId: site._id,
-          typeOfServ: d.typeOfServ,
-          chargesType: d.chargesType,
-          charges: Number(d.charges) || 0,
-          calcOn: d.calcOn,
-          calcOperation: d.calcOperation,
-          amountToCompare: d.amountToCompare,
-          created_by: createdBy,
-        }));
-        await OtherCharges.insertMany(otherDocs, { session });
-      }
+      return res.status(400).json({
+        success: false,
+        message: 'Company name already exists',
+      })
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    // ==========================================
+    // CHECK DUPLICATE EMAIL
+    // ==========================================
+    const duplicateEmail = await transaction
+      .request()
+      .input('client_email', sql.VarChar, emailId).query(`
+        SELECT TOP 1 id
+        FROM new_client
+        WHERE client_email = @client_email
+        AND active = 0
+      `)
+
+    if (duplicateEmail.recordset.length > 0) {
+      await transaction.rollback()
+
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists',
+      })
+    }
+
+    // ==========================================
+    // INSERT CLIENT
+    // ==========================================
+    const clientResult = await transaction
+      .request()
+      .input('company_name', sql.VarChar, companyName)
+      .input('contact_person', sql.VarChar, contactPersonName)
+      .input('contact_no', sql.VarChar, contactNo)
+      .input('client_email', sql.VarChar, emailId)
+      .input('client_add', sql.VarChar, address)
+      .input('client_city', sql.VarChar, city)
+      .input('client_state', sql.VarChar, state)
+      .input('city_pincode', sql.VarChar, pincode)
+      .input('client_gst_state_code', sql.VarChar, gstStateCode)
+      .input('client_gst_no', sql.VarChar, gstNo)
+      .input('bank_name', sql.VarChar, bankName)
+      .input('client_acc_no', sql.VarChar, accountNo)
+      .input('ifsc_code', sql.VarChar, ifscCode)
+      .input('bank_branch', sql.VarChar, branch)
+      .input('bank_city', sql.VarChar, bankCity)
+      .input('micr_code', sql.VarChar, micrCode)
+      .input('sac_code', sql.VarChar, sacCode)
+      .input('other_info', sql.VarChar, otherInfo)
+      .input('terms', sql.VarChar, termsAndConditions)
+      .input('company_bank_name', sql.VarChar, companyBankName)
+      .input('billing_company', sql.VarChar, billingCompany)
+      .input('branch_id', sql.VarChar, req.user.branch_id)
+      .input('company_id', sql.VarChar, req.user.company_id)
+      .input('created_by', sql.Int, createdBy).query(`
+        INSERT INTO new_client (
+          company_name,
+          contact_person,
+          contact_no,
+          client_email,
+          client_add,
+          client_city,
+          client_state,
+          city_pincode,
+          client_gst_state_code,
+          client_gst_no,
+          bank_name,
+          client_acc_no,
+          ifsc_code,
+          bank_branch,
+          bank_city,
+          micr_code,
+          sac_code,
+          other_info,
+          terms,
+          company_bank_name,
+          billing_company,
+          branch_id,
+          company_id,
+          created_by,
+          created_on,
+          active
+        )
+        VALUES (
+          @company_name,
+          @contact_person,
+          @contact_no,
+          @client_email,
+          @client_add,
+          @client_city,
+          @client_state,
+          @city_pincode,
+          @client_gst_state_code,
+          @client_gst_no,
+          @bank_name,
+          @client_acc_no,
+          @ifsc_code,
+          @bank_branch,
+          @bank_city,
+          @micr_code,
+          @sac_code,
+          @other_info,
+          @terms,
+          @company_bank_name,
+          @billing_company,
+          @branch_id,
+          @company_id,
+          @created_by,
+          GETDATE(),
+          0
+        )
+
+        SELECT SCOPE_IDENTITY() AS id
+      `)
+
+    const clientId = clientResult.recordset[0].id
+
+    // ==========================================
+    // INSERT SITES
+    // ==========================================
+    for (const site of sites) {
+      // Generate client code
+      const codeResult = await transaction.request().query(`
+        SELECT COUNT(*) AS total
+        FROM client_rates
+      `)
+
+      const total = codeResult.recordset[0].total + 1
+      const clientCode = `C${String(total).padStart(3, '0')}`
+
+      // ==========================================
+      // INSERT SITE
+      // ==========================================
+      const siteResult = await transaction
+        .request()
+        .input('client_id', sql.VarChar, clientId)
+        .input('site_name', sql.VarChar, site.siteName)
+        .input('work_order_no', sql.VarChar, site.workOrderNo)
+        .input('client_code', sql.VarChar, clientCode)
+
+        .input('cc_contact_person', sql.VarChar, site.contactPersonName)
+
+        .input('cc_address', sql.VarChar, site.address)
+
+        .input('cc_billing_address', sql.VarChar, site.billingAddress)
+
+        .input('cc_contactno', sql.VarChar, site.contactNo)
+        .input('cc_emailid', sql.VarChar, site.emailId)
+        .input('cc_city', sql.VarChar, site.city)
+        .input('cc_state', sql.VarChar, site.state)
+        .input('cc_country', sql.VarChar, site.country)
+
+        .input('cc_location_name', sql.VarChar, site.locationName)
+
+        .input('cc_loct_Startdate', sql.VarChar, site.locationStartDate)
+
+        .input('cc_sales_person', sql.VarChar, site.salesPersonName)
+
+        .input('cc_sales_person_email', sql.VarChar, site.salesPersonEmailId)
+
+        .input('cc_sales_person_phone', sql.VarChar, site.salesPersonContactNo)
+
+        .input('cc_bill_cycle_Date', sql.VarChar, site.billCycleDate)
+
+        .input('cc_loct_status', sql.VarChar, site.status || 'Active')
+
+        .input('cc_cgst', sql.VarChar, site.cgst || 0)
+        .input('cc_sgst', sql.VarChar, site.sgst || 0)
+        .input('cc_igst', sql.VarChar, site.igst || 0)
+
+        .input(
+          'cc_est_billing_amount',
+          sql.VarChar,
+          site.expectedBillingAmount || 0,
+        )
+
+        .input('billing_nodays', sql.VarChar, site.daysForBilling || 0)
+
+        .input('display_ot', sql.VarChar, site.viewOTHours ? 1 : 0)
+
+        .input('attach_wages', sql.VarChar, site.attachWagesSHeet ? 1 : 0)
+
+        .input('convert_decimal', sql.VarChar, site.roundOffAmount ? 1 : 0)
+
+        .input('bill_without_rank', sql.VarChar, site.billWithoutRank ? 1 : 0)
+
+        .input('branch_id', sql.VarChar, req.user.branch_id)
+
+        .input('company_id', sql.VarChar, req.user.company_id)
+
+        .input('created_by', sql.VarChar, createdBy).query(`
+          INSERT INTO client_rates (
+            client_id,
+            site_name,
+            work_order_no,
+            client_code,
+
+            cc_contact_person,
+            cc_address,
+            cc_billing_address,
+            cc_contactno,
+            cc_emailid,
+            cc_city,
+            cc_state,
+            cc_country,
+
+            cc_location_name,
+            cc_loct_Startdate,
+
+            cc_sales_person,
+            cc_sales_person_email,
+            cc_sales_person_phone,
+
+            cc_bill_cycle_Date,
+            cc_loct_status,
+
+            cc_cgst,
+            cc_sgst,
+            cc_igst,
+
+            cc_est_billing_amount,
+
+            billing_nodays,
+
+            display_ot,
+            attach_wages,
+            convert_decimal,
+            bill_without_rank,
+
+            branch_id,
+            company_id,
+            created_by,
+            active
+          )
+          VALUES (
+            @client_id,
+            @site_name,
+            @work_order_no,
+            @client_code,
+
+            @cc_contact_person,
+            @cc_address,
+            @cc_billing_address,
+            @cc_contactno,
+            @cc_emailid,
+            @cc_city,
+            @cc_state,
+            @cc_country,
+
+            @cc_location_name,
+            @cc_loct_Startdate,
+
+            @cc_sales_person,
+            @cc_sales_person_email,
+            @cc_sales_person_phone,
+
+            @cc_bill_cycle_Date,
+            @cc_loct_status,
+
+            @cc_cgst,
+            @cc_sgst,
+            @cc_igst,
+
+            @cc_est_billing_amount,
+
+            @billing_nodays,
+
+            @display_ot,
+            @attach_wages,
+            @convert_decimal,
+            @bill_without_rank,
+
+            @branch_id,
+            @company_id,
+            @created_by,
+            0
+          )
+        `)
+
+      // ==========================================
+      // HERE INSERT:
+      // - Charges By Rank
+      // - Other Charges
+      // INTO YOUR MSSQL TABLES
+      // ==========================================
+    }
+
+    await transaction.commit()
 
     res.status(201).json({
       success: true,
-      message: "Client and related data created successfully",
-      data: client,
-    });
+      message: 'Client created successfully',
+      clientId,
+    })
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("CREATE CLIENT FAILED:", error);
+    await transaction.rollback()
+
+    console.error('CREATE CLIENT FAILED:', error)
+
     res.status(500).json({
       success: false,
-      message: "Error creating client with sites and rates",
+      message: 'Error creating client',
       error: error.message,
-    });
+    })
   }
-};
+}
+
+// MSSQL VERSION - addClientSite
 
 exports.addClientSite = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const { clientId } = req.params;
-    const userId = req.user.id; // from auth middleware
-    const siteData = req.body[0];
+  const pool = await poolPromise
+  const transaction = new sql.Transaction(pool)
 
-    // 1️⃣ Validate client existence
-    const client = await Client.findById(clientId);
-    if (!client) {
+  const safe = (v) => (v === undefined || v === null ? '' : String(v))
+
+  const safeNum = (v) =>
+    v === undefined || v === null || v === '' ? '0' : String(v)
+
+  try {
+    await transaction.begin()
+
+    const { clientId } = req.params
+    const userId = req.user.id
+    const siteData = req.body || {}
+
+    // ======================
+    // CHECK CLIENT
+    // ======================
+    const clientCheck = await new sql.Request(transaction).input(
+      'clientId',
+      sql.VarChar,
+      clientId,
+    ).query(`
+        SELECT TOP 1 id 
+        FROM new_client 
+        WHERE id = @clientId AND active = '0'
+      `)
+
+    if (!clientCheck.recordset.length) {
+      await transaction.rollback()
       return res.status(404).json({
         success: false,
-        message: "Client not found",
-      });
+        message: 'Client not found',
+      })
     }
 
-    // 2️⃣ Generate new clientCode for this site
-    const siteCount = await SiteDetail.countDocuments();
-    const clientCode = `C${String(siteCount + 1).padStart(3, "0")}`;
+    // ======================
+    // GENERATE CODE
+    // ======================
+    const countResult = await new sql.Request(transaction).query(`
+      SELECT COUNT(*) AS total FROM client_rates
+    `)
 
-    // 3️⃣ Create the new site
-    const newSite = await SiteDetail.create(
-      [
-        {
-          clientId,
-          siteName: siteData.siteName,
-          workOrderNo: siteData.workOrderNo,
-          clientCode,
-          contactPersonName: siteData.contactPersonName,
-          address: siteData.address,
-          billingAddress: siteData.billingAddress,
-          contactNo: siteData.contactNo,
-          emailId: siteData.emailId,
-          city: siteData.city,
-          state: siteData.state,
-          country: siteData.country,
-          locationName: siteData.locationName,
-          locationStartDate: siteData.locationStartDate
-            ? new Date(siteData.locationStartDate)
-            : null,
-          salesPersonName: siteData.salesPersonName,
-          salesPersonEmailId: siteData.salesPersonEmailId,
-          salesPersonContactNo: siteData.salesPersonContactNo,
-          billCycleDate: siteData.billCycleDate,
-          status: siteData.status || "Active",
-          cgst: parseFloat(siteData.cgst) || 0,
-          sgst: parseFloat(siteData.sgst) || 0,
-          igst: parseFloat(siteData.igst) || 0,
-          expectedBillingAmount:
-            parseFloat(siteData.expectedBillingAmount) || 0,
-          daysForBilling: parseInt(siteData.daysForBilling) || 0,
-          viewOTHours: !!siteData.viewOTHours,
-          attachWagesSHeet: !!siteData.attachWagesSHeet,
-          roundOffAmount: !!siteData.roundOffAmount,
-          billWithoutRank: !!siteData.billWithoutRank,
-          created_by: userId,
-        },
-      ],
-      { session }
-    );
+    const clientCode =
+      'C' + String(countResult.recordset[0].total + 1).padStart(3, '0')
 
-    const site = newSite[0];
+    // ======================
+    // INSERT SITE
+    // ======================
+    const result = await new sql.Request(transaction)
+      .input('client_id', sql.VarChar, clientId)
+      .input('site_name', sql.VarChar, safe(siteData.siteName))
+      .input('work_order_no', sql.VarChar, safe(siteData.workOrderNo))
+      .input('client_code', sql.VarChar, clientCode)
 
-    // 4️⃣ Create otherDetails if provided
-    let createdOtherDetails = [];
-    if (
-      Array.isArray(siteData.otherDetails) &&
-      siteData.otherDetails.length > 0
-    ) {
-      const mappedOtherDetails = siteData.otherDetails.map((d) => ({
-        clientId,
-        siteId: site._id,
-        typeOfServ: d.typeOfServ,
-        chargesType: d.chargesType,
-        charges: Number(d.charges) || 0,
-        calcOn: d.calcOn,
-        calcOperation: d.calcOperation,
-        amountToCompare: d.amountToCompare,
-        created_by: userId,
-      }));
+      .input('cc_contact_person', sql.VarChar, safe(siteData.contactPersonName))
+      .input('cc_address', sql.VarChar, safe(siteData.address))
+      .input('cc_billing_address', sql.VarChar, safe(siteData.billingAddress))
+      .input('cc_contactno', sql.VarChar, safe(siteData.contactNo))
+      .input('cc_emailid', sql.VarChar, safe(siteData.emailId))
+      .input('cc_city', sql.VarChar, safe(siteData.city))
+      .input('cc_state', sql.VarChar, safe(siteData.state))
+      .input('cc_country', sql.VarChar, safe(siteData.country))
 
-      createdOtherDetails = await OtherCharges.insertMany(mappedOtherDetails, {
-        session,
-      });
-    }
+      .input('cc_location_name', sql.VarChar, safe(siteData.locationName))
+      .input('cc_loct_Startdate', sql.VarChar, safe(siteData.startDate))
 
-    // 5️⃣ Create chargesByRank (rates) if provided
-    let createdRates = [];
-    if (Array.isArray(siteData.rates) && siteData.rates.length > 0) {
-      const mappedRates = siteData.rates.map((r) => ({
-        clientId,
-        siteId: site._id,
-        empType: r.empType,
-        hours: Number(r.hours) || 0,
-        nos: Number(r.nos) || 0,
-        basic: Number(r.basic) || 0,
-        hra: Number(r.hra) || 0,
-        da: Number(r.da) || 0,
-        specialAllowance: Number(r.specialAllowance) || 0,
-        otherAllowance: Number(r.otherAllowance) || 0,
-        lww: Number(r.lww) || 0,
-        bonus: Number(r.bonus) || 0,
-        costPerHeadGross: Number(r.costPerHeadGross) || 0,
-        serviceChargesType: r.serviceChargesType,
-        serviceCharges: Number(r.serviceCharges) || 0,
-        perDayRate: Number(r.perDayRate) || 0,
-        otRate: Number(r.otRate) || 0,
-        leaveWages: Number(r.leaveWages) || 0,
-        uniformWashing: Number(r.uniformWashing) || 0,
-        anyOther: Number(r.anyOther) || 0,
-        created_by: userId,
-      }));
+      .input('cc_sales_person', sql.VarChar, safe(siteData.salesPersonName))
+      .input(
+        'cc_sales_person_email',
+        sql.VarChar,
+        safe(siteData.salesPersonEmail),
+      )
+      .input(
+        'cc_sales_person_phone',
+        sql.VarChar,
+        safe(siteData.salesPersonPhone),
+      )
 
-      createdRates = await ChargesByRank.insertMany(mappedRates, { session });
-    }
+      .input('cc_bill_cycle_Date', sql.VarChar, safe(siteData.billCycleDate))
+      .input('cc_loct_status', sql.VarChar, safe(siteData.status || 'Active'))
 
-    await session.commitTransaction();
-    session.endSession();
+      // IMPORTANT FIX (NO undefined allowed)
+      .input('cc_cgst', sql.VarChar, safeNum(siteData.cgst))
+      .input('cc_sgst', sql.VarChar, safeNum(siteData.sgst))
+      .input('cc_igst', sql.VarChar, safeNum(siteData.igst))
+      .input(
+        'cc_est_billing_amount',
+        sql.VarChar,
+        safeNum(siteData.billingAmount),
+      )
+      .input('billing_nodays', sql.VarChar, safeNum(siteData.billingDays))
 
-    // Return everything
-    res.status(201).json({
+      .input('display_ot', sql.VarChar, siteData.displayOt ? '1' : '0')
+      .input('attach_wages', sql.VarChar, siteData.attachWages ? '1' : '0')
+      .input(
+        'convert_decimal',
+        sql.VarChar,
+        siteData.convertDecimal ? '1' : '0',
+      )
+      .input(
+        'bill_without_rank',
+        sql.VarChar,
+        siteData.billWithoutRank ? '1' : '0',
+      )
+
+      .input('active', sql.VarChar, '0')
+      .input('company_id', sql.VarChar, safe(req.user.company_id))
+      .input('branch_id', sql.VarChar, safe(req.user.branch_id))
+      .input('modified_by', sql.VarChar, safe(userId)).query(`
+        INSERT INTO client_rates (
+          client_id,
+          site_name,
+          work_order_no,
+          client_code,
+          cc_contact_person,
+          cc_address,
+          cc_billing_address,
+          cc_contactno,
+          cc_emailid,
+          cc_city,
+          cc_state,
+          cc_country,
+          cc_location_name,
+          cc_loct_Startdate,
+          cc_sales_person,
+          cc_sales_person_email,
+          cc_sales_person_phone,
+          cc_bill_cycle_Date,
+          cc_loct_status,
+          cc_cgst,
+          cc_sgst,
+          cc_igst,
+          cc_est_billing_amount,
+          billing_nodays,
+          display_ot,
+          attach_wages,
+          convert_decimal,
+          bill_without_rank,
+          active,
+          company_id,
+          branch_id,
+          modified_by
+        )
+        VALUES (
+          @client_id,
+          @site_name,
+          @work_order_no,
+          @client_code,
+          @cc_contact_person,
+          @cc_address,
+          @cc_billing_address,
+          @cc_contactno,
+          @cc_emailid,
+          @cc_city,
+          @cc_state,
+          @cc_country,
+          @cc_location_name,
+          @cc_loct_Startdate,
+          @cc_sales_person,
+          @cc_sales_person_email,
+          @cc_sales_person_phone,
+          @cc_bill_cycle_Date,
+          @cc_loct_status,
+          @cc_cgst,
+          @cc_sgst,
+          @cc_igst,
+          @cc_est_billing_amount,
+          @billing_nodays,
+          @display_ot,
+          @attach_wages,
+          @convert_decimal,
+          @bill_without_rank,
+          @active,
+          @company_id,
+          @branch_id,
+          @modified_by
+        )
+
+        SELECT SCOPE_IDENTITY() AS id
+      `)
+
+    await transaction.commit()
+
+    return res.status(201).json({
       success: true,
-      message: "Site and related details added successfully",
-      data: {
-        site: newSite,
-        otherDetails: createdOtherDetails,
-        rates: createdRates,
-      },
-    });
+      message: 'Site added successfully',
+      siteId: result.recordset[0].id,
+      clientCode,
+    })
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("ADD CLIENT SITE FAILED:", error);
-    res.status(500).json({
+    await transaction.rollback()
+
+    console.error('ADD CLIENT SITE FAILED:', error)
+
+    return res.status(500).json({
       success: false,
-      message: "Server error while adding new site",
+      message: 'Server error while adding new site',
       error: error.message,
-    });
+    })
   }
-};
+}
 
 // @desc    Get all clients with search and filter
 // @route   GET /api/clients
 
+// ======================================================
+// GET ALL CLIENTS - MSSQL VERSION
+// ======================================================
+
 exports.getAllClients = async (req, res) => {
   try {
-    const { searchFields, fromDate, toDate } = req.query;
-    let query = { active: 0 };
+    const { searchFields, fromDate, toDate } = req.query
 
+    const pool = await poolPromise
+
+    let whereClause = ` WHERE c.active = 0 `
+    const request = pool.request()
+
+    // =========================================
+    // SEARCH FILTERS
+    // =========================================
     if (searchFields) {
-      const fields = JSON.parse(searchFields);
-      fields.forEach((field) => {
+      const fields = JSON.parse(searchFields)
+
+      fields.forEach((field, index) => {
         if (field.field && field.keyword) {
-          query[field.field] = new RegExp(field.keyword, "i");
+          const paramName = `search${index}`
+
+          // field.field frontend se aa raha hai
+          // validate for security
+          const allowedFields = {
+            companyName: 'c.company_name',
+            contactPersonName: 'c.contact_person',
+            contactNo: 'c.contact_no',
+            emailId: 'c.client_email',
+            city: 'c.client_city',
+            state: 'c.client_state',
+            gstNo: 'c.client_gst_no',
+          }
+
+          if (allowedFields[field.field]) {
+            whereClause += ` 
+              AND ${allowedFields[field.field]} LIKE @${paramName}
+            `
+
+            request.input(paramName, `%${field.keyword}%`)
+          }
         }
-      });
+      })
     }
 
+    // =========================================
+    // DATE FILTER
+    // =========================================
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999); // include the entire end day
+      whereClause += `
+        AND CAST(c.created_on AS DATE)
+        BETWEEN @fromDate AND @toDate
+      `
 
-      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-        query.created_on = { $gte: from, $lte: to };
-      }
+      request.input('fromDate', fromDate)
+      request.input('toDate', toDate)
     }
 
-    const clients = await Client.find(query)
-      .populate({
-        path: "billingCompany",
-        select: "companyName", // show billing company name
-      })
-      .populate({
-        path: "companyBankName",
-        select: "companyName bankDetails.bankName", // show bank info
-      })
-      .populate("created_by", "name")
-      .sort({ created_on: -1 })
-      .lean(); // plain JS objects
+    // =========================================
+    // MAIN QUERY
+    // =========================================
+    const result = await request.query(`
+      SELECT 
+        c.id,
+        c.company_name,
+        c.contact_person,
+        c.contact_no,
+        c.client_email,
+        c.client_city,
+        c.client_state,
+        c.client_gst_no,
+        c.created_on,
 
-    const siteCounts = await SiteDetail.aggregate([
-      { $match: { active: 0 } },
-      { $group: { _id: "$clientId", count: { $sum: 1 } } },
-    ]);
+        creator.fullname AS created_by_name,
 
-    const siteCountMap = siteCounts.reduce((acc, s) => {
-      acc[s._id.toString()] = s.count;
-      return acc;
-    }, {});
+        billing.company_name AS billing_company_name,
 
-    const employeeCounts = await Employee.aggregate([
-      { $match: { active: 0 } },
-      { $group: { _id: "$client", count: { $sum: 1 } } },
-    ]);
+        bank.company_name AS company_bank_name,
 
-    const employeeCountMap = employeeCounts.reduce((acc, s) => {
-      acc[s._id.toString()] = s.count;
-      return acc;
-    }, {});
+        ISNULL(siteCounts.totalSites, 0) AS totalSites,
 
-    const formatted = clients.map((client) => ({
-      _id: client._id,
-      companyName: client.companyName,
-      contactPersonName: client.contactPersonName,
-      contactNo: client.contactNo,
-      emailId: client.emailId,
-      billingCompany: client.billingCompany?.companyName || "",
-      companyBankName:
-        client.companyBankName?.companyName ||
-        client.companyBankName?.bankDetails?.[0]?.bankName ||
-        "",
-      city: client.city,
-      state: client.state,
-      gstNo: client.gstNo || "—",
-      totalSites: siteCountMap[client._id.toString()] || 0,
-      totalEmployees: employeeCountMap[client._id.toString()] || 0,
-      created_by: client.created_by?.name || "",
+        ISNULL(employeeCounts.totalEmployees, 0) AS totalEmployees
+
+      FROM new_client c
+
+      LEFT JOIN users creator
+        ON creator.id = c.created_by
+
+      LEFT JOIN new_client billing
+        ON billing.id = c.billing_company_id
+
+      LEFT JOIN new_client bank
+        ON bank.id = c.company_bank_name
+
+      LEFT JOIN (
+        SELECT 
+          client_id,
+          COUNT(*) AS totalSites
+        FROM client_rates
+        WHERE active = 0
+        GROUP BY client_id
+      ) siteCounts
+        ON siteCounts.client_id = c.id
+
+      LEFT JOIN (
+  SELECT 
+    client_id,
+    COUNT(*) AS totalEmployees
+  FROM employee
+  WHERE active = 0
+  GROUP BY client_id
+) employeeCounts
+  ON employeeCounts.client_id = c.id
+
+      ${whereClause}
+
+      ORDER BY c.id DESC
+    `)
+
+    const formatted = result.recordset.map((client) => ({
+      _id: client.id,
+      companyName: client.company_name,
+      contactPersonName: client.contact_person,
+      contactNo: client.contact_no,
+      emailId: client.client_email,
+
+      billingCompany: client.billing_company_name || '',
+
+      companyBankName: client.company_bank_name || '',
+
+      city: client.client_city,
+      state: client.client_state,
+
+      gstNo: client.client_gst_no || '—',
+
+      totalSites: client.totalSites || 0,
+
+      totalEmployees: client.totalEmployees || 0,
+
+      created_by: client.created_by_name || '',
+
       created_on: client.created_on,
-    }));
+    }))
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: formatted,
-    });
+    })
   } catch (error) {
-    console.error("GET CLIENTS FAILED:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching clients",
-      error: error.message,
-    });
-  }
-};
+    console.error('GET CLIENTS FAILED:', error)
 
-// @desc    Get a single client by its ID
-// @route   GET /api/clients/:id
+    return res.status(500).json({
+      success: false,
+      message: 'Server error fetching clients',
+      error: error.message,
+    })
+  }
+}
+
+// ======================================================
+// GET CLIENT BY ID - MSSQL VERSION
+// ======================================================
+
 exports.getClientById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const client = await Client.findById(id)
-      .populate("created_by", "name")
-      .populate("billingCompany", "companyName bankDetails")
-      .populate(
-        "companyBankName",
-        "companyName bankDetails.bankName bankDetails.ifsc"
-      )
-      .lean();
+    const { id } = req.params
 
-    if (!client)
-      return res
-        .status(404)
-        .json({ success: false, message: "Client not found" });
+    const pool = await poolPromise
 
-    // console.log(id);
-    const sites = await SiteDetail.find({ clientId: id, active: 0 })
-      .lean()
-      .populate("clientId", "companyName")
-      .sort({ created_on: -1 });
+    // =========================================
+    // GET CLIENT
+    // =========================================
+    const clientResult = await pool.request().input('id', sql.VarChar, id)
+      .query(`
+        SELECT 
+          c.*,
 
-    for (const site of sites) {
-      site.rates = await ChargesByRank.find({
-        siteId: site._id,
-        active: 0,
-      }).lean();
-      site.otherDetails = await OtherCharges.find({
-        siteId: site._id,
-        active: 0,
-      }).lean();
-    }
+          creator.fullname AS created_by_name,
 
-    // console.log(client, sites);
-    res.status(200).json({
-      success: true,
-      data: { ...client, sites },
-    });
-  } catch (error) {
-    console.error("GET CLIENT BY ID FAILED:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching client details",
-      error: error.message,
-    });
-  }
-};
+          billing.company_name AS billing_company_name,
 
-exports.getSitesByClientId = async (req, res) => {
-  try {
-    const { clientId } = req.params;
+          bank.company_name AS bank_company_name,
+          bank.bank_name AS bank_name,
+          bank.ifsc_code AS bank_ifsc
 
-    if (!clientId) {
-      return res.status(400).json({ message: "clientId is required" });
-    }
+        FROM new_client c
 
-    // ✅ Convert to ObjectId safely
-    const clientObjectId = new mongoose.Types.ObjectId(clientId);
+        LEFT JOIN users creator
+          ON creator.id = c.created_by
 
-    // ✅ Fetch all active sites for this client
-    const sites = await SiteDetail.find({
-      clientId: clientObjectId,
-      active: 0, // Only active sites
-    });
+        LEFT JOIN new_client billing
+          ON billing.id = c.billing_company_id
 
-    if (!sites || sites.length === 0) {
+        LEFT JOIN new_client bank
+          ON bank.id = c.company_bank_name
+
+        WHERE c.id = @id
+        AND c.active = 0
+      `)
+
+    if (clientResult.recordset.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No active sites found for this client",
-      });
+        message: 'Client not found',
+      })
+    }
+
+    const client = clientResult.recordset[0]
+
+    // =========================================
+    // GET SITES
+    // =========================================
+    const sitesResult = await pool.request().input('clientId', sql.VarChar, id)
+      .query(`
+        SELECT *
+        FROM client_rates
+        WHERE client_id = @clientId
+        AND active = 0
+        ORDER BY id DESC
+      `)
+
+    const sites = sitesResult.recordset
+
+    // =========================================
+    // GET RATES + OTHER DETAILS
+    // =========================================
+    for (const site of sites) {
+      // -------------------------
+      // RATES
+      // -------------------------
+      const ratesResult = await pool
+        .request()
+        .input('siteId', sql.VarChar, site.id).query(`
+          SELECT *
+          FROM charges_by_rank
+          WHERE site_id = @siteId
+          AND active = 0
+        `)
+
+      // -------------------------
+      // OTHER DETAILS
+      // -------------------------
+      const otherDetailsResult = await pool
+        .request()
+        .input('siteId', sql.VarChar, site.id).query(`
+          SELECT *
+          FROM other_charges
+          WHERE site_id = @siteId
+          AND active = 0
+        `)
+
+      site.rates = ratesResult.recordset
+      site.otherDetails = otherDetailsResult.recordset
+    }
+
+    // =========================================
+    // FINAL RESPONSE
+    // =========================================
+    return res.status(200).json({
+      success: true,
+
+      data: {
+        _id: client.id,
+
+        companyName: client.company_name,
+        contactPersonName: client.contact_person,
+        contactNo: client.contact_no,
+        emailId: client.client_email,
+
+        address: client.client_add,
+        city: client.client_city,
+        state: client.client_state,
+        pincode: client.city_pincode,
+
+        gstStateCode: client.client_gst_state_code,
+        gstNo: client.client_gst_no,
+
+        sacCode: client.sac_code,
+
+        otherInfo: client.other_info,
+
+        termsAndConditions: client.terms,
+
+        bankDetails: {
+          bankName: client.bank_name,
+          accountNo: client.client_acc_no,
+          ifscCode: client.ifsc_code,
+          branch: client.bank_branch,
+          city: client.bank_city,
+          micrCode: client.micr_code,
+        },
+
+        billingCompany: {
+          companyName: client.billing_company_name || '',
+        },
+
+        companyBankName: {
+          companyName: client.bank_company_name || '',
+          bankName: client.bank_name || '',
+          ifsc: client.bank_ifsc || '',
+        },
+
+        created_by: client.created_by_name || '',
+
+        created_on: client.created_on,
+
+        sites,
+      },
+    })
+  } catch (error) {
+    console.error('GET CLIENT BY ID FAILED:', error)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error fetching client details',
+      error: error.message,
+    })
+  }
+}
+
+// @desc    Get Sites By Client ID
+// @route   GET /api/clients/sites/:clientId
+exports.getSitesByClientId = async (req, res) => {
+  try {
+    const { clientId } = req.params
+
+    if (!clientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'clientId is required',
+      })
+    }
+
+    const pool = await poolPromise
+
+    const result = await pool.request().input('clientId', sql.Int, clientId)
+      .query(`
+        SELECT *
+        FROM client_rates
+        WHERE client_id = @clientId
+        AND active = 0
+        ORDER BY id DESC
+      `)
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active sites found for this client',
+      })
     }
 
     res.status(200).json({
       success: true,
-      message: "Sites fetched successfully",
-      data: sites,
-    });
+      message: 'Sites fetched successfully',
+      data: result.recordset,
+    })
   } catch (error) {
-    console.error("FETCH SITES BY CLIENT ID FAILED:", error);
+    console.error('FETCH SITES BY CLIENT ID FAILED:', error)
+
     res.status(500).json({
       success: false,
-      message: "Error fetching sites for client",
+      message: 'Error fetching sites for client',
       error: error.message,
-    });
+    })
   }
-};
+}
 
+// @desc    Get Sites By Multiple Client IDs
+// @route   POST /api/clients/sites-by-ids
 exports.getSitesByClientIds = async (req, res) => {
   try {
-    const { clientIds } = req.body;
-    // console.log(req.body);
+    const { clientIds } = req.body
+
     if (!clientIds || !Array.isArray(clientIds)) {
-      return res.status(400).json({ message: "clientIds must be an array" });
+      return res.status(400).json({
+        success: false,
+        message: 'clientIds must be an array',
+      })
     }
 
-    // ✅ Properly convert to ObjectId
-    const ids = clientIds.map(
-      (idObj) => new mongoose.Types.ObjectId(idObj.$oid || idObj)
-    );
+    const pool = await poolPromise
 
-    const sites = await SiteDetail.find({
-      clientId: { $in: ids },
-      active: 0, // Only active sites
-    });
+    // Convert array into comma separated values
+    const ids = clientIds
+      .map((idObj) => parseInt(idObj.$oid || idObj))
+      .filter((id) => !isNaN(id))
 
-    res.status(200).json({ success: true, data: sites });
+    if (ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid client IDs',
+      })
+    }
+
+    const query = `
+      SELECT *
+      FROM client_rates
+      WHERE client_id IN (${ids.join(',')})
+      AND active = 0
+      ORDER BY id DESC
+    `
+
+    const result = await pool.request().query(query)
+
+    res.status(200).json({
+      success: true,
+      data: result.recordset,
+    })
   } catch (error) {
-    console.error("FETCH SITES BY CLIENT IDS FAILED:", error);
+    console.error('FETCH SITES BY CLIENT IDS FAILED:', error)
+
     res.status(500).json({
       success: false,
-      message: "Error fetching sites by client IDs",
+      message: 'Error fetching sites by client IDs',
       error: error.message,
-    });
+    })
   }
-};
+}
 
 // @desc    Update an existing client by its ID
 // @route   PUT /api/clients/:id
 
 exports.updateClientDetails = async (req, res) => {
+  const pool = await poolPromise
+  const transaction = new sql.Transaction(pool)
+
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
+    const { id } = req.params
+    const userId = req.user.id
 
     const {
       companyName,
@@ -597,695 +1032,688 @@ exports.updateClientDetails = async (req, res) => {
       companyBankName,
       otherInfo,
       termsAndConditions,
-    } = req.body;
+    } = req.body
 
-    const normalizedBillingCompany =
-      billingCompany && billingCompany !== "" ? billingCompany : undefined;
-    const normalizedCompanyBankName =
-      companyBankName && companyBankName !== "" ? companyBankName : undefined;
+    await transaction.begin()
 
-    // 🔍 Check duplicates
-    const [clientExist, emailExist] = await Promise.all([
-      Client.findOne({ companyName, _id: { $ne: req.params.id } }),
-      Client.findOne({ emailId, _id: { $ne: req.params.id } }),
-    ]);
+    // =========================
+    // 1. DUPLICATE CHECK (NEW REQUEST)
+    // =========================
+    const dupRequest = new sql.Request(transaction)
 
-    if (clientExist)
-      return res.status(400).json({ message: "Company name already exists" });
-    if (emailExist)
-      return res.status(400).json({ message: "Email ID already exists" });
+    const dup = await dupRequest
+      .input('id', sql.Int, id)
+      .input('companyName', sql.VarChar, companyName)
+      .input('emailId', sql.VarChar, emailId).query(`
+        SELECT id FROM new_client
+        WHERE (company_name = @companyName OR client_email = @emailId)
+        AND id <> @id
+      `)
 
-    const updatedClient = await Client.findByIdAndUpdate(
-      id,
-      {
-        companyName,
-        contactPersonName,
-        contactNo,
-        emailId,
-        address,
-        city,
-        state,
-        pincode,
-        gstStateCode,
-        gstNo,
-        sacCode,
-        billingCompany: normalizedBillingCompany,
-        companyBankName: normalizedCompanyBankName,
-        otherInfo,
-        termsAndConditions,
-        modified_by: userId,
-        modified_on: new Date(),
-      },
-      { new: true }
-    ).populate("billingCompany", "companyName");
-
-    if (!updatedClient) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Client not found" });
+    if (dup.recordset.length > 0) {
+      await transaction.rollback()
+      return res.status(400).json({
+        message: 'Company name or Email already exists',
+      })
     }
+
+    // =========================
+    // 2. UPDATE QUERY (NEW REQUEST)
+    // =========================
+    const updateRequest = new sql.Request(transaction)
+
+    await updateRequest
+      .input('companyName', sql.VarChar, companyName)
+      .input('contactPersonName', sql.VarChar, contactPersonName)
+      .input('contactNo', sql.VarChar, contactNo)
+      .input('emailId', sql.VarChar, emailId)
+      .input('address', sql.VarChar, address)
+      .input('city', sql.VarChar, city)
+      .input('state', sql.VarChar, state)
+      .input('pincode', sql.VarChar, pincode)
+      .input('gstStateCode', sql.VarChar, gstStateCode)
+      .input('gstNo', sql.VarChar, gstNo)
+      .input('sacCode', sql.VarChar, sacCode)
+      .input('billingCompany', sql.VarChar, billingCompany)
+      .input('companyBankName', sql.VarChar, companyBankName)
+      .input('otherInfo', sql.VarChar, otherInfo)
+      .input('termsAndConditions', sql.VarChar, termsAndConditions)
+      .input('userId', sql.Int, userId)
+      .input('id', sql.Int, id).query(`
+        UPDATE new_client
+        SET
+          company_name = @companyName,
+          contact_person = @contactPersonName,
+          contact_no = @contactNo,
+          client_email = @emailId,
+          client_add = @address,
+          client_city = @city,
+          client_state = @state,
+          city_pincode = @pincode,
+          client_gst_state_code = @gstStateCode,
+          client_gst_no = @gstNo,
+          sac_code = @sacCode,
+          billing_company = @billingCompany,
+          company_bank_name = @companyBankName,
+          other_info = @otherInfo,
+          terms = @termsAndConditions,
+          modified_by = @userId,
+          modified_on = GETDATE()
+        WHERE id = @id
+      `)
+
+    await transaction.commit()
 
     res.status(200).json({
       success: true,
-      message: "Client details updated successfully",
-      data: updatedClient,
-    });
+      message: 'Client updated successfully',
+    })
   } catch (error) {
-    console.error("UPDATE CLIENT DETAILS FAILED:", error);
+    console.error('UPDATE CLIENT FAILED:', error)
+    await transaction.rollback()
+
     res.status(500).json({
       success: false,
-      message: "Error updating client details",
       error: error.message,
-    });
+    })
   }
-};
+}
 
 exports.updateClientBankDetails = async (req, res) => {
+  const pool = await poolPromise
+
   try {
-    console.log(req.params, "Params");
-    const { id } = req.params;
-    const userId = req.userid;
+    const { id } = req.params
+    const userId = req.user.id
+    const bank = req.body
 
-    const bank = req.body;
-
-    const bankDetails = {
-      bankName: bank.bankName || "",
-      accountNo: bank.accountNo || "",
-      ifscCode: bank.ifscCode || "",
-      branch: bank.branch || "",
-      city: bank.bankCity || bank.city || "",
-      micrCode: bank.micrCode || "",
-    };
-
-    const updatedClient = await Client.findByIdAndUpdate(
-      id,
-      {
-        bankDetails,
-        modified_by: userId,
-        modified_on: new Date(),
-      },
-      { new: true }
-    );
-
-    if (!updatedClient) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Client not found" });
-    }
+    await pool
+      .request()
+      .input('id', sql.Int, id)
+      .input('bankName', sql.VarChar, bank.bankName || '')
+      .input('accountNo', sql.VarChar, bank.accountNo || '')
+      .input('ifscCode', sql.VarChar, bank.ifscCode || '')
+      .input('branch', sql.VarChar, bank.branch || '')
+      .input('city', sql.VarChar, bank.bankCity || bank.city || '')
+      .input('micrCode', sql.VarChar, bank.micrCode || '')
+      .input('userId', sql.Int, userId).query(`
+        UPDATE new_client
+        SET
+          bank_name = @bankName,
+          client_acc_no = @accountNo,
+          ifsc_code = @ifscCode,
+          bank_branch = @branch,
+          bank_city = @city,
+          micr_code = @micrCode,
+          modified_by = @userId,
+          modified_on = GETDATE()
+        WHERE id = @id
+      `)
 
     res.status(200).json({
       success: true,
-      message: "Bank details updated successfully",
-      data: updatedClient.bankDetails,
-    });
+      message: 'Bank details updated successfully',
+    })
   } catch (error) {
-    console.error("UPDATE BANK DETAILS FAILED:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating bank details",
-      error: error.message,
-    });
+    console.error('BANK UPDATE FAILED:', error)
+    res.status(500).json({ success: false, error: error.message })
   }
-};
+}
 
 exports.updateClientSiteDetails = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const pool = await poolPromise
+  const transaction = new sql.Transaction(pool)
 
   try {
-    const { clientId, siteId } = req.params;
-    const userId = req.user.id;
-    const siteData = req.body;
+    const { clientId, siteId } = req.params
+    const userId = req.user.id
+    const siteData = req.body
 
-    // ===== Update Site Info =====
-    const updatedSite = await SiteDetail.findByIdAndUpdate(
-      siteId,
-      {
-        ...siteData,
-        locationStartDate: siteData.locationStartDate
-          ? new Date(siteData.locationStartDate)
-          : null,
-        cgst: parseFloat(siteData.cgst) || 0,
-        sgst: parseFloat(siteData.sgst) || 0,
-        igst: parseFloat(siteData.igst) || 0,
-        expectedBillingAmount: parseFloat(siteData.expectedBillingAmount) || 0,
-        daysForBilling: parseInt(siteData.daysForBilling) || 0,
-        modified_by: userId,
-        modified_on: new Date(),
-      },
-      { new: true, session }
-    );
+    await transaction.begin()
+    const request = new sql.Request(transaction)
 
-    if (!updatedSite) {
-      await session.abortTransaction();
-      session.endSession();
-      return res
-        .status(404)
-        .json({ success: false, message: "Site not found" });
-    }
+    // =========================
+    // UPDATE SITE
+    // =========================
+    await request
+      .input('siteId', sql.Int, siteId)
+      .input('clientId', sql.Int, clientId)
+      .input('userId', sql.Int, userId)
+      .input('siteName', sql.VarChar, siteData.siteName)
+      .input('workOrderNo', sql.VarChar, siteData.workOrderNo)
+      .input('contactPersonName', sql.VarChar, siteData.contactPersonName)
+      .input('address', sql.VarChar, siteData.address)
+      .input('billingAddress', sql.VarChar, siteData.billingAddress)
+      .input('contactNo', sql.VarChar, siteData.contactNo)
+      .input('emailId', sql.VarChar, siteData.emailId)
+      .input('city', sql.VarChar, siteData.city)
+      .input('state', sql.VarChar, siteData.state)
+      .input('country', sql.VarChar, siteData.country)
+      .input('locationName', sql.VarChar, siteData.locationName)
+      .input('cgst', sql.Float, parseFloat(siteData.cgst) || 0)
+      .input('sgst', sql.Float, parseFloat(siteData.sgst) || 0)
+      .input('igst', sql.Float, parseFloat(siteData.igst) || 0)
+      .input(
+        'expectedBillingAmount',
+        sql.Float,
+        parseFloat(siteData.expectedBillingAmount) || 0,
+      )
+      .input('daysForBilling', sql.Int, parseInt(siteData.daysForBilling) || 0)
+      .query(`
+        UPDATE client_rates
+        SET
+          site_name = @siteName,
+          work_order_no = @workOrderNo,
+          cc_contact_person = @contactPersonName,
+          cc_address = @address,
+          cc_contactno = @contactNo,
+          cc_emailid = @emailId,
+          cc_city = @city,
+          cc_state = @state,
+          cc_country = @country,
+          cc_location_name = @locationName,
+          cc_cgst = @cgst,
+          cc_sgst = @sgst,
+          cc_igst = @igst,
+          cc_est_billing_amount = @expectedBillingAmount,
+          billing_nodays = @daysForBilling,
+          modified_by = @userId,
+          modified_on = GETDATE()
+        WHERE id = @siteId
+      `)
 
+    // =========================
+    // RATES UPDATE (SIMPLE VERSION)
+    // =========================
     if (Array.isArray(siteData.rates)) {
-      const rates = siteData.rates;
-      const existingRates = await ChargesByRank.find({ siteId }).session(
-        session
-      );
-      const existingRateIds = existingRates.map((r) => r._id.toString());
-      const incomingRateIds = rates.filter((r) => r._id).map((r) => r._id);
-      const bulkOps = [];
-
-      for (const rate of rates) {
-        if (rate._id && existingRateIds.includes(rate._id)) {
-          // Update existing
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: rate._id },
-              update: {
-                $set: {
-                  ...rate,
-                  hours: Number(rate.hours) || 0,
-                  nos: Number(rate.nos) || 0,
-                  basic: Number(rate.basic) || 0,
-                  hra: Number(rate.hra) || 0,
-                  da: Number(rate.da) || 0,
-                  specialAllowance: Number(rate.specialAllowance) || 0,
-                  otherAllowance: Number(rate.otherAllowance) || 0,
-                  lww: Number(rate.lww) || 0,
-                  bonus: Number(rate.bonus) || 0,
-                  costPerHeadGross: Number(rate.costPerHeadGross) || 0,
-                  serviceChargesType: rate.serviceChargesType,
-                  serviceCharges: Number(rate.serviceCharges) || 0,
-                  perDayRate: Number(rate.perDayRate) || 0,
-                  otRate: Number(rate.otRate) || 0,
-                  leaveWages: Number(rate.leaveWages) || 0,
-                  uniformWashing: Number(rate.uniformWashing) || 0,
-                  anyOther: Number(rate.anyOther) || 0,
-                  modified_by: userId,
-                  modified_on: new Date(),
-                  active: 0,
-                },
-              },
-            },
-          });
-        } else {
-          // Insert new
-          bulkOps.push({
-            insertOne: {
-              document: {
-                ...rate,
-                hours: Number(rate.hours) || 0,
-                nos: Number(rate.nos) || 0,
-                basic: Number(rate.basic) || 0,
-                hra: Number(rate.hra) || 0,
-                da: Number(rate.da) || 0,
-                specialAllowance: Number(rate.specialAllowance) || 0,
-                otherAllowance: Number(rate.otherAllowance) || 0,
-                lww: Number(rate.lww) || 0,
-                bonus: Number(rate.bonus) || 0,
-                costPerHeadGross: Number(rate.costPerHeadGross) || 0,
-                serviceChargesType: rate.serviceChargesType,
-                serviceCharges: Number(rate.serviceCharges) || 0,
-                perDayRate: Number(rate.perDayRate) || 0,
-                otRate: Number(rate.otRate) || 0,
-                leaveWages: Number(rate.leaveWages) || 0,
-                uniformWashing: Number(rate.uniformWashing) || 0,
-                anyOther: Number(rate.anyOther) || 0,
-                clientId,
-                siteId,
-                created_by: userId,
-                active: 0,
-              },
-            },
-          });
+      for (const r of siteData.rates) {
+        if (r.id) {
+          await request.input('rateId', sql.Int, r.id).query(`
+              UPDATE charges_by_rank
+              SET
+                hours = ${Number(r.hours) || 0},
+                nos = ${Number(r.nos) || 0},
+                basic = ${Number(r.basic) || 0},
+                hra = ${Number(r.hra) || 0},
+                da = ${Number(r.da) || 0},
+                modified_by = ${userId},
+                modified_on = GETDATE()
+              WHERE id = @rateId
+            `)
         }
       }
-
-      // Soft delete removed ones
-      const ratesToDeactivate = existingRateIds.filter(
-        (id) => !incomingRateIds.includes(id)
-      );
-      if (ratesToDeactivate.length) {
-        bulkOps.push({
-          updateMany: {
-            filter: { _id: { $in: ratesToDeactivate } },
-            update: {
-              $set: {
-                active: 1,
-                modified_by: userId,
-                modified_on: new Date(),
-              },
-            },
-          },
-        });
-      }
-
-      if (bulkOps.length) await ChargesByRank.bulkWrite(bulkOps, { session });
     }
 
-    // ============================
-    // HANDLE OTHER CHARGES
-    // ============================
+    // =========================
+    // OTHER CHARGES
+    // =========================
     if (Array.isArray(siteData.otherDetails)) {
-      const details = siteData.otherDetails;
-      const existingDetails = await OtherCharges.find({ siteId }).session(
-        session
-      );
-      const existingDetailIds = existingDetails.map((d) => d._id.toString());
-      const incomingDetailIds = details.filter((d) => d._id).map((d) => d._id);
-      const bulkOps = [];
-
-      for (const detail of details) {
-        if (detail._id && existingDetailIds.includes(detail._id)) {
-          // Update existing
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: detail._id },
-              update: {
-                $set: {
-                  ...detail,
-                  charges: Number(detail.charges) || 0,
-                  modified_by: userId,
-                  modified_on: new Date(),
-                  active: 0,
-                },
-              },
-            },
-          });
-        } else {
-          // Insert new
-          bulkOps.push({
-            insertOne: {
-              document: {
-                ...detail,
-                charges: Number(detail.charges) || 0,
-                clientId,
-                siteId,
-                created_by: userId,
-                active: 0,
-              },
-            },
-          });
+      for (const d of siteData.otherDetails) {
+        if (d.id) {
+          await request.query(`
+            UPDATE other_charges
+            SET
+              charges = ${Number(d.charges) || 0},
+              modified_by = ${userId},
+              modified_on = GETDATE()
+            WHERE id = ${d.id}
+          `)
         }
       }
-
-      // Soft delete removed ones
-      const detailsToDeactivate = existingDetailIds.filter(
-        (id) => !incomingDetailIds.includes(id)
-      );
-      if (detailsToDeactivate.length) {
-        bulkOps.push({
-          updateMany: {
-            filter: { _id: { $in: detailsToDeactivate } },
-            update: {
-              $set: {
-                active: 1,
-                modified_by: userId,
-                modified_on: new Date(),
-              },
-            },
-          },
-        });
-      }
-
-      if (bulkOps.length) await OtherCharges.bulkWrite(bulkOps, { session });
     }
 
-    // ===== Commit =====
-    await session.commitTransaction();
-    session.endSession();
-
-    // Re-fetch updated data for response
-    const updatedRates = await ChargesByRank.find({ siteId });
-    const updatedOtherDetails = await OtherCharges.find({ siteId });
+    await transaction.commit()
 
     res.status(200).json({
       success: true,
-      message: "Site details updated successfully",
-      site: updatedSite,
-      rates: updatedRates,
-      otherDetails: updatedOtherDetails,
-    });
+      message: 'Site updated successfully',
+    })
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("UPDATE SITE DETAILS FAILED:", error);
+    console.error('SITE UPDATE FAILED:', error)
+    await transaction.rollback()
+
     res.status(500).json({
       success: false,
-      message: "Error updating site details",
       error: error.message,
-    });
+    })
   }
-};
+}
 
 // @desc    Delete a client by its ID
 // @route   DELETE /api/clients/:id
 exports.deleteClient = async (req, res) => {
   try {
-    const client = await Client.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          active: 1,
-          disabled_on: new Date(),
-          disabled_by: req.user.id,
-        },
-      },
-      { new: true }
-    );
+    const clientId = req.params.id
+    const userId = req.user.id
 
-    if (!client) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Client not found" });
+    const pool = await poolPromise
+
+    const result = await pool
+      .request()
+      .input('id', sql.Int, clientId)
+      .input('disabled_by', sql.VarChar, String(userId))
+      .input('disabled_on', sql.DateTime, new Date()).query(`
+        UPDATE new_client
+        SET 
+          active = '1',
+          disabled_by = @disabled_by,
+          disabled_on = @disabled_on
+        WHERE id = @id AND active = '0'
+      `)
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found',
+      })
     }
 
-    res
-      .status(200)
-      .json({ success: true, message: "Client deleted successfully" });
+    return res.status(200).json({
+      success: true,
+      message: 'Client deleted successfully',
+    })
   } catch (error) {
-    console.error("DELETE CLIENT FAILED:", error);
-    res.status(500).json({
+    console.error('DELETE CLIENT FAILED:', error)
+
+    return res.status(500).json({
       success: false,
-      message: "Server error while deleting client.",
+      message: 'Server error while deleting client',
       error: error.message,
-    });
+    })
   }
-};
+}
 
 exports.deleteClientSite = async (req, res) => {
-  // console.log(req.params);
   try {
-    const site = await SiteDetail.findByIdAndUpdate(
-      req.params.siteId,
-      {
-        $set: {
-          active: 1,
-          disabled_on: new Date(),
-          disabled_by: req.user.id,
-        },
-      },
-      { new: true }
-    );
+    const pool = await poolPromise
 
-    if (!site) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Site not found" });
+    const siteId = req.params.siteId
+    const userId = req.user.id
+
+    const result = await pool
+      .request()
+      .input('siteId', siteId)
+      .input('disabled_by', userId)
+      .input('disabled_on', new Date()).query(`
+        UPDATE client_rates
+        SET 
+          active = '1',
+          disabled_by = @disabled_by,
+          disabled_on = @disabled_on
+        WHERE id = @siteId AND active = '0'
+      `)
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Site not found',
+      })
     }
 
-    res
-      .status(200)
-      .json({ success: true, message: "Client deleted successfully" });
+    return res.status(200).json({
+      success: true,
+      message: 'Site deleted successfully',
+    })
   } catch (error) {
-    console.error("DELETE CLIENT FAILED:", error);
-    res.status(500).json({
+    console.error('DELETE SITE FAILED:', error)
+
+    return res.status(500).json({
       success: false,
-      message: "Server error while deleting client.",
+      message: 'Server error while deleting site',
       error: error.message,
-    });
+    })
   }
-};
+}
 
 function formatDateForExcel(val) {
-  if (!val && val !== 0) return "";
-  if (val instanceof Date && !isNaN(val.getTime())) {
-    const d = val;
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+  if (!val && val !== 0) return ''
+  const d = new Date(val)
+
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    return `${dd}-${mm}-${yyyy}`
   }
-  // If it's a string, return as-is
-  return String(val);
+
+  return String(val)
 }
 
 exports.exportClientsToExcel = async (req, res) => {
   try {
-    const { searchFields, fromDate, toDate } = req.query;
-    let query = { active: 0 };
+    const { searchFields, fromDate, toDate } = req.query
 
+    let whereClause = `WHERE c.active = '0'`
+
+    // 🔍 Search filters
     if (searchFields) {
-      const fields = JSON.parse(searchFields);
-      fields.forEach((field) => {
-        if (field.field && field.keyword) {
-          query[field.field] = new RegExp(field.keyword, "i");
+      const fields = JSON.parse(searchFields)
+
+      fields.forEach((f) => {
+        if (f.field && f.keyword) {
+          whereClause += ` AND c.${f.field} LIKE '%${f.keyword}%'`
         }
-      });
+      })
     }
 
+    // 📅 Date filter
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999); // include the entire end day
-
-      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-        query.created_on = { $gte: from, $lte: to };
-      }
+      whereClause += `
+        AND c.created_on BETWEEN '${fromDate}' AND '${toDate} 23:59:59'
+      `
     }
 
-    // 1. FETCH CLIENTS
-    const clients = await Client.find(query)
-      .populate({
-        path: "billingCompany",
-        select: "companyName",
-      })
-      .populate({
-        path: "companyBankName",
-        select: "companyName bankDetails.bankName",
-      })
-      .lean();
+    // 1️⃣ GET CLIENTS
+    const clientsResult = await req.db.request().query(`
+      SELECT 
+        c.id,
+        c.company_name,
+        c.contact_person,
+        c.contact_no,
+        c.client_email,
+        c.client_gst_no,
+        c.created_on
+      FROM new_client c
+      ${whereClause}
+      ORDER BY c.created_on DESC
+    `)
 
-    // 2. FETCH SITES GROUPED BY CLIENT ID
-    const sites = await SiteDetail.find({ active: 0 })
-      .sort({ created_on: -1 })
-      .lean();
+    const clients = clientsResult.recordset
 
-    // Map sites by clientId
-    const siteMap = {};
+    // 2️⃣ GET SITES
+    const sitesResult = await req.db.request().query(`
+      SELECT 
+        s.client_id,
+        s.site_name,
+        s.client_code,
+        s.cc_contact_person,
+        s.cc_address,
+        s.cc_contactno,
+        s.cc_emailid
+      FROM client_rates s
+      WHERE s.active = '0'
+    `)
+
+    const sites = sitesResult.recordset
+
+    // 📦 Map sites by client_id
+    const siteMap = {}
     sites.forEach((s) => {
-      if (!siteMap[s.clientId]) siteMap[s.clientId] = [];
-      siteMap[s.clientId].push(s);
-    });
+      if (!siteMap[s.client_id]) siteMap[s.client_id] = []
+      siteMap[s.client_id].push(s)
+    })
 
-    // 3. HEADERS
+    // 3️⃣ HEADERS
     const headers = [
-      "Client Name",
-      "Client Code",
-      "Client Contact Person",
-      "Client Contact No",
-      "Client GST No",
-      "Site Name",
-      "Site Contact Person",
-      "Site Address",
-      "Site Contact No",
-      "Site Email ID",
-      "Created On",
-    ];
+      'Client Name',
+      'Client Code',
+      'Client Contact Person',
+      'Client Contact No',
+      'Client GST No',
+      'Site Name',
+      'Site Contact Person',
+      'Site Address',
+      'Site Contact No',
+      'Site Email ID',
+      'Created On',
+    ]
 
-    // 4. PREPARE ROWS
-    const excelRows = [];
+    // 4️⃣ ROWS
+    const excelRows = []
 
     clients.forEach((client) => {
-      const clientSites = siteMap[client._id] || [];
+      const clientSites = siteMap[client.id] || []
+
       clientSites.forEach((site) => {
         excelRows.push([
-          client.companyName || "",
-          site.clientCode || "",
-          client.contactPersonName || "",
-          client.contactNo || "",
-          client.gstNo || "",
-          site.siteName || "",
-          site.contactPersonName || "",
-          site.address || "",
-          site.contactNo || "",
-          site.emailId || "",
+          client.company_name || '',
+          site.client_code || '',
+          client.contact_person || '',
+          client.contact_no || '',
+          client.client_gst_no || '',
+          site.site_name || '',
+          site.cc_contact_person || '',
+          site.cc_address || '',
+          site.cc_contactno || '',
+          site.cc_emailid || '',
           formatDateForExcel(client.created_on),
-        ]);
-      });
-    });
+        ])
+      })
+    })
 
-    // 5. BUILD EXCEL DATA
-    const sheetData = [headers, ...excelRows];
+    // 5️⃣ CREATE EXCEL
+    const sheetData = [headers, ...excelRows]
 
-    const worksheet = xlsx.utils.aoa_to_sheet(sheetData);
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Client Sites");
+    const worksheet = xlsx.utils.aoa_to_sheet(sheetData)
+    const workbook = xlsx.utils.book_new()
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Client Sites')
 
-    // 6. RANDOM 10-DIGIT NUMBER IN FILENAME
-    const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
-    const fileName = `ClientSites_${randomNumber}.xlsx`;
+    const fileName = `ClientSites_${Date.now()}.xlsx`
 
-    const excelBuffer = xlsx.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
+    const buffer = xlsx.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    })
 
-    // 7. SEND FILE
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    // 6️⃣ RESPONSE
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
     res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
 
-    return res.send(excelBuffer);
+    return res.send(buffer)
   } catch (error) {
-    console.error("EXPORT CLIENT-SITE ERR:", error);
-    return res
-      .status(500)
-      .json({ message: "Failed to generate client-site report" });
+    console.error('EXPORT CLIENT ERROR:', error)
+    return res.status(500).json({
+      message: 'Failed to generate report',
+      error: error.message,
+    })
   }
-};
+}
 
+//Not check in postman
 exports.getWORates = async (req, res) => {
   try {
-    // console.log(req.params);
-    let query = { active: 0 };
-    query.siteId = req.params.siteId;
-    const woRates = await WORateChart.find(query).sort({ created_on: 1 });
+    const siteId = req.params.siteId
 
-    // console.log(woRates);
-    res.status(200).json(woRates);
+    const result = await req.db.request().input('siteId', siteId).query(`
+        SELECT *
+        FROM wo_rate_chart
+        WHERE site_id = @siteId
+          AND active = '0'
+        ORDER BY created_on ASC
+      `)
+
+    return res.status(200).json(result.recordset)
   } catch (e) {
-    console.error("GET WO RATES FAILED:", e);
-    res.status(500).json({
+    console.error('GET WO RATES FAILED:', e)
+    return res.status(500).json({
       success: false,
-      message: "Server error fetching WO Rates",
+      message: 'Server error fetching WO Rates',
       error: e.message,
-    });
+    })
   }
-};
+}
 
+//Not check in postman
 exports.addWORates = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const transaction = new req.db.Transaction()
+
   try {
-    const clientId = req.params.clientId;
-    const siteId = req.params.siteId;
-    // console.log(req.body, clientId, siteId);
+    const clientId = req.params.clientId
+    const siteId = req.params.siteId
+    const woRates = req.body
 
-    const woRates = req.body;
-    if (Array.isArray(woRates)) {
-      const existingOrder = await WORateChart.find({
-        clientId,
-        siteId,
-      }).session(session);
+    await transaction.begin()
 
-      const existingOrderIds = existingOrder.map((o) => o._id.toString());
-      const incomingIds = woRates
-        .filter((o) => o._id)
-        .map((o) => o._id.toString());
+    const request = transaction.request()
 
-      const bulkOps = [];
+    // 1️⃣ Get existing records
+    const existing = await request
+      .input('clientId', clientId)
+      .input('siteId', siteId).query(`
+        SELECT id
+        FROM wo_rate_chart
+        WHERE client_id = @clientId
+          AND site_id = @siteId
+          AND active = '0'
+      `)
 
-      for (const o of woRates) {
-        if (o._id && existingOrderIds.includes(o._id.toString())) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: o._id },
-              update: {
-                $set: {
-                  woType: o.woType || "",
-                  size: o.size || "",
-                  fromWt: o.fromWt || "",
-                  toWt: o.toWt || "",
-                  type: o.type || "",
-                  equipmentType: o.equipmentType || "",
-                  examPer: o.examPer || "",
-                  rate: o.rate || "",
-                  modified_by: req.user.id,
-                  modified_on: new Date(),
-                },
-              },
-            },
-          });
-        } else {
-          bulkOps.push({
-            insertOne: {
-              document: {
-                clientId,
-                siteId,
-                woType: o.woType || "",
-                size: o.size || "",
-                fromWt: o.fromWt || "",
-                toWt: o.toWt || "",
-                type: o.type || "",
-                equipmentType: o.equipmentType || "",
-                examPer: o.examPer || "",
-                rate: o.rate || "",
-                created_by: req.user.id,
-                active: 0,
-              },
-            },
-          });
-        }
+    const existingIds = existing.recordset.map((r) => r.id)
+
+    const incomingIds = woRates.filter((o) => o.id).map((o) => o.id)
+
+    // 2️⃣ UPDATE + INSERT
+    for (const o of woRates) {
+      if (o.id && existingIds.includes(o.id)) {
+        // UPDATE
+        await transaction
+          .request()
+          .input('id', o.id)
+          .input('woType', o.woType || '')
+          .input('size', o.size || '')
+          .input('fromWt', o.fromWt || '')
+          .input('toWt', o.toWt || '')
+          .input('type', o.type || '')
+          .input('equipmentType', o.equipmentType || '')
+          .input('examPer', o.examPer || '')
+          .input('rate', o.rate || 0)
+          .input('modified_by', req.user.id)
+          .input('modified_on', new Date()).query(`
+            UPDATE wo_rate_chart
+            SET 
+              wo_type = @woType,
+              size = @size,
+              from_wt = @fromWt,
+              to_wt = @toWt,
+              type = @type,
+              equipment_type = @equipmentType,
+              exam_per = @examPer,
+              rate = @rate,
+              modified_by = @modified_by,
+              modified_on = @modified_on
+            WHERE id = @id
+          `)
+      } else {
+        // INSERT
+        await transaction
+          .request()
+          .input('clientId', clientId)
+          .input('siteId', siteId)
+          .input('woType', o.woType || '')
+          .input('size', o.size || '')
+          .input('fromWt', o.fromWt || '')
+          .input('toWt', o.toWt || '')
+          .input('type', o.type || '')
+          .input('equipmentType', o.equipmentType || '')
+          .input('examPer', o.examPer || '')
+          .input('rate', o.rate || 0)
+          .input('created_by', req.user.id).query(`
+            INSERT INTO wo_rate_chart (
+              client_id,
+              site_id,
+              wo_type,
+              size,
+              from_wt,
+              to_wt,
+              type,
+              equipment_type,
+              exam_per,
+              rate,
+              created_by,
+              active,
+              created_on
+            )
+            VALUES (
+              @clientId,
+              @siteId,
+              @woType,
+              @size,
+              @fromWt,
+              @toWt,
+              @type,
+              @equipmentType,
+              @examPer,
+              @rate,
+              @created_by,
+              '0',
+              GETDATE()
+            )
+          `)
       }
-
-      const woRatesToDelete = existingOrderIds.filter(
-        (id) => !incomingIds.includes(id)
-      );
-
-      if (woRatesToDelete.length > 0) {
-        bulkOps.push({
-          updateMany: {
-            filter: {
-              _id: { $in: woRatesToDelete },
-            },
-            update: {
-              $set: {
-                active: 1,
-                disabled_by: req.user.id,
-                disabled_on: new Date(),
-              },
-            },
-          },
-        });
-      }
-
-      // console.log(JSON.stringify(bulkOps, null, 2));
-      if (bulkOps.length) await WORateChart.bulkWrite(bulkOps, { session });
     }
-    await session.commitTransaction();
-    session.endSession();
+
+    // 3️⃣ SOFT DELETE (removed records)
+    const toDelete = existingIds.filter((id) => !incomingIds.includes(id))
+
+    if (toDelete.length > 0) {
+      await transaction
+        .request()
+        .input('ids', toDelete.join(','))
+        .input('disabled_by', req.user.id).query(`
+          UPDATE wo_rate_chart
+          SET 
+            active = '1',
+            disabled_by = @disabled_by,
+            disabled_on = GETDATE()
+          WHERE id IN (SELECT value FROM STRING_SPLIT(@ids, ','))
+        `)
+    }
+
+    await transaction.commit()
+
     return res.status(200).json({
       success: true,
-      message: "Work order rates added successfully!",
-    });
+      message: 'Work order rates saved successfully!',
+    })
   } catch (e) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("WO Rate Chart Error: ", e);
-    res
-      .status(500)
-      .json({ message: "Error adding WO Rates", error: e.message });
+    await transaction.rollback()
+
+    console.error('WO RATE ERROR:', e)
+    return res.status(500).json({
+      success: false,
+      message: 'Error adding WO Rates',
+      error: e.message,
+    })
   }
-};
+}
 
 exports.getSiteBySiteId = async (req, res) => {
   try {
-    // console.log(req.params);
-    const { id } = req.params;
-    const site = await SiteDetail.findById(id)
-      .populate("created_by", "name")
-      .populate("clientId", "companyName");
+    const { id } = req.params
 
-    if (!site)
-      return res
-        .status(404)
-        .json({ success: false, message: "Site not found" });
+    const result = await req.db.request().input('id', id).query(`
+        SELECT TOP 1 *
+        FROM client_rates
+        WHERE id = @id
+      `)
 
-    res.status(200).json({ data: site });
+    if (!result.recordset.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Site not found',
+      })
+    }
+
+    const site = result.recordset[0]
+
+    return res.status(200).json({ data: site })
   } catch (e) {
-    console.error("GET SITE BY ID FAILED:", e);
+    console.error('GET SITE BY ID FAILED:', e)
     res.status(500).json({
       success: false,
-      message: "Server error fetching site details",
+      message: 'Server error fetching site details',
       error: e.message,
-    });
+    })
   }
-};
+}
 
+//Not check in postman
 exports.updateWagesSettings = async (req, res) => {
   try {
-    const { clientId, siteId } = req.params;
+    const { clientId, siteId } = req.params
+
     const {
       multiplyOTHours,
       calculateUniformDays,
@@ -1294,42 +1722,92 @@ exports.updateWagesSettings = async (req, res) => {
       ESICWagesCalculatedOn,
       CTCCalculate,
       wagesSettings,
-    } = req.body;
+    } = req.body
 
-    // Validate input
     if (!clientId || !siteId) {
-      return res
-        .status(400)
-        .json({ message: "Client ID and Site ID are required" });
+      return res.status(400).json({
+        message: 'Client ID and Site ID are required',
+      })
     }
 
-    const site = await SiteDetail.findOne({ _id: siteId, clientId });
-    if (!site) {
-      return res.status(404).json({ message: "Site not found" });
+    const request = req.db.request()
+
+    // 1️⃣ CHECK SITE EXISTS
+    const siteCheck = await request
+      .input('clientId', clientId)
+      .input('siteId', siteId).query(`
+        SELECT TOP 1 *
+        FROM client_rates
+        WHERE id = @siteId AND client_id = @clientId
+      `)
+
+    if (!siteCheck.recordset.length) {
+      return res.status(404).json({
+        message: 'Site not found',
+      })
     }
 
-    // Update fields
-    site.multiplyOTHours = multiplyOTHours ?? site.multiplyOTHours;
-    site.calculateUniformDays =
-      calculateUniformDays ?? site.calculateUniformDays;
-    site.calculateEarnedGrossWithoutOT =
-      calculateEarnedGrossWithoutOT ?? site.calculateEarnedGrossWithoutOT;
-    site.pfWagesCalculatedOn = pfWagesCalculatedOn ?? site.pfWagesCalculatedOn;
-    site.ESICWagesCalculatedOn =
-      ESICWagesCalculatedOn ?? site.ESICWagesCalculatedOn;
-    site.CTCCalculate = CTCCalculate ?? site.CTCCalculate;
-    site.wagesSettings = wagesSettings ?? site.wagesSettings;
-    site.modified_by = req.user.id; // Assuming you have middleware to set req.user
-    site.modified_on = new Date();
+    const site = siteCheck.recordset[0]
 
-    await site.save();
-    // console.log(site);
+    // 2️⃣ UPDATE QUERY
+    await req.db
+      .request()
+      .input('clientId', clientId)
+      .input('siteId', siteId)
+      .input('multiplyOTHours', multiplyOTHours ?? site.multiply_ot_hours)
+      .input(
+        'calculateUniformDays',
+        calculateUniformDays ?? site.calculate_uniform_days,
+      )
+      .input(
+        'calculateEarnedGrossWithoutOT',
+        calculateEarnedGrossWithoutOT ?? site.calculate_earnedgross_withoutot,
+      )
+      .input(
+        'pfWagesCalculatedOn',
+        pfWagesCalculatedOn ?? site.pf_wages_calculated_on,
+      )
+      .input(
+        'ESICWagesCalculatedOn',
+        ESICWagesCalculatedOn ?? site.ESIC_wages_calculated_on,
+      )
+      .input('CTCCalculate', CTCCalculate ?? site.CTC_calculate)
+      .input(
+        'wagesSettings',
+        wagesSettings ? JSON.stringify(wagesSettings) : site.wages_header,
+      )
+      .input('modified_by', req.user.id)
+      .input('modified_on', new Date()).query(`
+        UPDATE client_rates
+        SET
+          multiply_ot_hours = @multiplyOTHours,
+          calculate_uniform_days = @calculateUniformDays,
+          calculate_earnedgross_withoutot = @calculateEarnedGrossWithoutOT,
+          pf_wages_calculated_on = @pfWagesCalculatedOn,
+          ESIC_wages_calculated_on = @ESICWagesCalculatedOn,
+          CTC_calculate = @CTCCalculate,
+          wages_header = @wagesSettings,
+          modified_by = @modified_by,
+          modified_on = @modified_on
+        WHERE id = @siteId AND client_id = @clientId
+      `)
 
-    return res
-      .status(200)
-      .json({ message: "Wages settings updated successfully", site });
+    // 3️⃣ RETURN UPDATED DATA
+    const updated = await req.db.request().input('siteId', siteId).query(`
+        SELECT TOP 1 *
+        FROM client_rates
+        WHERE id = @siteId
+      `)
+
+    return res.status(200).json({
+      message: 'Wages settings updated successfully',
+      site: updated.recordset[0],
+    })
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server error" });
+    console.error(error)
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    })
   }
-};
+}

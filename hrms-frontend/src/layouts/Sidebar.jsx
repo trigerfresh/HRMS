@@ -144,7 +144,6 @@ const Sidebar = ({ isCollapsed, isMobileOpen, closeSidebar }) => {
             </div>
 
             {/* Submodules */}
-            {/* Submodules */}
             {expandedModules[module.moduleName] && !isCollapsed && (
               <ul className="submenu-list">
                 {module.submodules.map((sub) => (

@@ -1,207 +1,222 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
 
-import FilterPanel from "../../utils/FilterPanel";
-import { FaPen, FaSearch, FaTrashAlt } from "react-icons/fa";
-import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+import FilterPanel from '../../utils/FilterPanel'
+import { FaPen, FaSearch, FaTrashAlt } from 'react-icons/fa'
+import { Alert, Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function WorkOrderTypePage() {
-  const token = localStorage.getItem("token");
-  const [workOrderTypes, setWorkOrderTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const token = localStorage.getItem('token')
+  const [workOrderTypes, setWorkOrderTypes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [input, setInput] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editInput, setEditInput] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
+  const [input, setInput] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editInput, setEditInput] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
 
   const [searchFields, setSearchFields] = useState([
-    { field: "name", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
-  const searchOptions = [{ value: "name", label: "Work Order Type" }];
+    { field: 'work_order_type', keyword: '' },
+  ])
 
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
+  const searchOptions = [{ value: 'work_order_type', label: 'Work Order Type' }]
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    if (!token) return {};
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
+    const token = localStorage.getItem('token')
+    if (!token) return {}
+    return { headers: { Authorization: `Bearer ${token}` } }
+  }
 
   const fetchTypes = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      let params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      let params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
-      const { data } = await axios.get(`${API_URL}/api/work-order-type`, {
+      const { data } = await axios.get(`${API_URL}/api/workOrderType`, {
         params,
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setWorkOrderTypes(data);
+      setWorkOrderTypes(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         setError(
-          e.response?.data?.message || "Failed to fetch Work Order types.",
-        );
+          e.response?.data?.message || 'Failed to fetch Work Order types.',
+        )
       }
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   useEffect(() => {
-    fetchTypes();
-  }, []);
+    fetchTypes()
+  }, [])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+    e.preventDefault()
+
+    if (!input.trim()) {
+      alert('Work Order Type is required')
+      return
+    }
+
     try {
       await axios.post(
-        `${API_URL}/api/work-order-type`,
-        { name: input },
+        `${API_URL}/api/workOrderType`,
+        {
+          work_order_type: input,
+        },
         getAuthHeaders(),
-      );
-      setInput("");
-      fetchTypes();
+      )
+
+      setInput('')
+      fetchTypes()
+
+      alert('Work Order Type added successfully!')
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else
-        alert(
-          error.response?.data?.message || "Failed to add work order type.",
-        );
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else {
+        alert(error.response?.data?.message || 'Failed to add work order type.')
+      }
     }
-  };
+  }
 
   const handleDelete = async (id) => {
     if (
-      window.confirm("Are you sure you want to delete this work order type?")
+      window.confirm('Are you sure you want to delete this work order type?')
     ) {
       try {
-        await axios.delete(`${API_URL}/api/work-order-type/${id}`, {
+        await axios.delete(`${API_URL}/api/workOrderType/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
+        })
       } catch (e) {
         if (e.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         } else
           alert(
             `Error: ${
-              e.response?.data?.message || "Failed to delete work order type."
+              e.response?.data?.message || 'Failed to delete work order type.'
             }`,
-          );
+          )
       }
     }
-    fetchTypes();
-  };
+    fetchTypes()
+  }
 
   const handleEdit = (id, name) => {
-    setEditingId(id);
-    setEditInput(name);
-  };
+    setEditingId(id)
+    setEditInput(name)
+  }
 
   const handleUpdate = async (id) => {
-    if (!editInput.trim()) return;
+    if (!editInput.trim()) return
+
     try {
       await axios.put(
-        `${API_URL}/api/work-order-type/${id}`,
-        { name: editInput },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      setEditingId(null);
-      setEditInput("");
-      fetchTypes();
+        `${API_URL}/api/workOrderType/${id}`,
+        {
+          work_order_type: editInput,
+        },
+        getAuthHeaders(),
+      )
+
+      setEditingId(null)
+      setEditInput('')
+      fetchTypes()
+
+      alert('Updated successfully!')
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else {
         alert(
-          error.response?.data?.message || "Failed to update work order type.",
-        );
+          error.response?.data?.message || 'Failed to update work order type.',
+        )
+      }
     }
-  };
+  }
 
   const handleSearch = () => {
-    fetchTypes();
-  };
+    fetchTypes()
+  }
 
   useEffect(() => {
-    fetchTypes();
-  }, [searchFields, dateFilter]);
+    fetchTypes()
+  }, [searchFields, dateFilter])
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
-      const response = await axios.get(
-        `${API_URL}/api/work-order-type/export`,
-        {
-          params,
-          responseType: "blob", // IMPORTANT
-          ...getAuthHeaders(),
-        },
-      );
+      const response = await axios.get(`${API_URL}/api/workOrderType/export`, {
+        params,
+        responseType: 'blob', // IMPORTANT
+        ...getAuthHeaders(),
+      })
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `WorkOrderTypes_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `WorkOrderTypes_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   const handleReset = () => {
-    setSearchFields([{ field: "name", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchTypes();
-  };
+    setSearchFields([{ field: 'work_order_type', keyword: '' }])
+
+    setDateFilter({ from: '', to: '' })
+
+    fetchTypes()
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
-          Work Order Type{" "}
+          Work Order Type{' '}
           <span className="text-success">({workOrderTypes.length})</span>
         </h1>
         <div className="page-actions">
@@ -209,7 +224,7 @@ export default function WorkOrderTypePage() {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
         </div>
       </div>
@@ -283,9 +298,9 @@ export default function WorkOrderTypePage() {
                     </tr>
                   ) : (
                     workOrderTypes.map((et) => (
-                      <tr key={et._id}>
+                      <tr key={et.id}>
                         <td>
-                          {editingId === et._id ? (
+                          {editingId === et.id ? (
                             <Col md={12}>
                               <Form.Control
                                 value={editInput}
@@ -295,18 +310,17 @@ export default function WorkOrderTypePage() {
                               />
                             </Col>
                           ) : (
-                            et.name
+                            et.work_order_type
                           )}
                         </td>
                         <td>
-                          {et.created_by ? et.created_by.name : ""}
+                          {/* {et.created_by} */}
                           <br />
-                          {et.created_on &&
-                            new Date(et.created_on).toLocaleDateString()}
+                          {et.created_on}
                         </td>
                         <td>
                           <div className="table-actions">
-                            {editingId === et._id ? (
+                            {editingId === et.id ? (
                               <>
                                 <Button
                                   className="work-order-type-cancel"
@@ -318,7 +332,7 @@ export default function WorkOrderTypePage() {
                                 <Button
                                   variant="primary"
                                   className="work-order-type-update edit"
-                                  onClick={() => handleUpdate(et._id)}
+                                  onClick={() => handleUpdate(et.id)}
                                 >
                                   Update
                                 </Button>
@@ -327,13 +341,15 @@ export default function WorkOrderTypePage() {
                               <>
                                 <button
                                   className="work-order-type-edit icon-btn edit"
-                                  onClick={() => handleEdit(et._id, et.name)}
+                                  onClick={() =>
+                                    handleEdit(et.id, et.work_order_type)
+                                  }
                                 >
                                   <FaPen />
                                 </button>
                                 <button
                                   className="icon-btn delete"
-                                  onClick={() => handleDelete(et._id)}
+                                  onClick={() => handleDelete(et.id)}
                                 >
                                   <FaTrashAlt />
                                 </button>
@@ -351,5 +367,5 @@ export default function WorkOrderTypePage() {
         </div>
       </Card>
     </div>
-  );
+  )
 }

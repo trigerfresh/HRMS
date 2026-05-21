@@ -1,217 +1,217 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { FaPlus, FaSearch, FaPen, FaTrashAlt } from "react-icons/fa";
-import SearchPanel from "../../utils/FilterPanel";
-import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { FaPlus, FaSearch, FaPen, FaTrashAlt } from 'react-icons/fa'
+import SearchPanel from '../../utils/FilterPanel'
+import { Alert, Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
 
 const Holiday = () => {
-  const [holidays, setHolidays] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [employeeTypes, setEmployeeTypes] = useState([]); // Add state for employee types
-  const [showForm, setShowForm] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [isEditing, setIsEditing] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [holidays, setHolidays] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  // const [employeeTypes, setEmployeeTypes] = useState([]) // Add state for employee types
+  const [showForm, setShowForm] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [isEditing, setIsEditing] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const initialFormData = {
-    state: "",
-    rank: "All",
-    holidays: [{ name: "", date: "" }],
-  };
-  const [formData, setFormData] = useState(initialFormData);
-  const [holidayFiles, setHolidayFiles] = useState({});
-  const [imagePreview, setImagePreview] = useState({});
+    state: '',
+    rank: 'All',
+    holidays: [{ name: '', date: '' }],
+  }
+  const [formData, setFormData] = useState(initialFormData)
+  const [holidayFiles, setHolidayFiles] = useState({})
+  const [imagePreview, setImagePreview] = useState({})
 
   const [searchFields, setSearchFields] = useState([
-    { field: "state", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'state', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
 
   const holidaySearchOptions = [
-    { value: "state", label: "State" },
-    { value: "rank", label: "Rank" },
-    { value: "holidays.name", label: "Holiday Name" },
-  ];
+    { value: 'state', label: 'State' },
+    { value: 'rank', label: 'Rank' },
+    { value: 'holidays.name', label: 'Holiday Name' },
+  ]
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-  };
+    const token = localStorage.getItem('token')
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+  }
 
   // Fetch employee types for rank dropdown
-  useEffect(() => {
-    const fetchEmployeeTypes = async () => {
-      try {
-        const { data } = await axios.get(
-          `${API_URL}/api/employee-types?simple=true`,
-          getAuthHeaders(),
-        );
-        setEmployeeTypes(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        }
-        console.warn("Failed to fetch employee types:", err);
-        setEmployeeTypes([]);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchEmployeeTypes = async () => {
+  //     try {
+  //       const { data } = await axios.get(
+  //         `${API_URL}/api/employee-types?simple=true`,
+  //         getAuthHeaders(),
+  //       )
+  //       setEmployeeTypes(Array.isArray(data) ? data : [])
+  //     } catch (err) {
+  //       if (err.response?.status === 401) {
+  //         localStorage.removeItem('token')
+  //         window.location.href = '/login'
+  //       }
+  //       console.warn('Failed to fetch employee types:', err)
+  //       setEmployeeTypes([])
+  //     }
+  //   }
 
-    fetchEmployeeTypes();
-  }, []);
+  //   fetchEmployeeTypes()
+  // }, [])
 
   const fetchHolidays = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const res = await axios.get(`${API_URL}/api/holidays`, {
         params,
         ...getAuthHeaders(),
-      });
-      setHolidays(res.data);
+      })
+      setHolidays(res.data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to load holidays.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to load holidays.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (!showForm) {
-      fetchHolidays();
+      fetchHolidays()
     }
-  }, [showForm]);
+  }, [showForm])
 
   useEffect(() => {
-    fetchHolidays();
-  }, [searchFields, dateFilter]);
+    fetchHolidays()
+  }, [searchFields, dateFilter])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    const key = name; // for company details, usually just the field name
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const key = name // for company details, usually just the field name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
   const handleHolidayRowChange = (index, field, value) => {
-    const updated = [...formData.holidays];
-    updated[index][field] = value;
-    setFormData({ ...formData, holidays: updated });
+    const updated = [...formData.holidays]
+    updated[index][field] = value
+    setFormData({ ...formData, holidays: updated })
 
     const key = `holiday${
       field.charAt(0).toUpperCase() + field.slice(1)
-    }_${index}`;
+    }_${index}`
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
   const handleFileChange = (index, file) => {
-    setHolidayFiles((prev) => ({ ...prev, [index]: file }));
+    setHolidayFiles((prev) => ({ ...prev, [index]: file }))
 
     // Create preview
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview((prev) => ({ ...prev, [index]: previewUrl }));
+      const previewUrl = URL.createObjectURL(file)
+      setImagePreview((prev) => ({ ...prev, [index]: previewUrl }))
     } else {
       setImagePreview((prev) => {
-        const newPreview = { ...prev };
-        delete newPreview[index];
-        return newPreview;
-      });
+        const newPreview = { ...prev }
+        delete newPreview[index]
+        return newPreview
+      })
     }
-  };
+  }
 
   const addHolidayRow = () =>
     setFormData({
       ...formData,
-      holidays: [...formData.holidays, { name: "", date: "" }],
-    });
+      holidays: [...formData.holidays, { name: '', date: '' }],
+    })
 
   const removeHolidayRow = (index) => {
-    const updatedHolidays = formData.holidays.filter((_, i) => i !== index);
-    setFormData({ ...formData, holidays: updatedHolidays });
+    const updatedHolidays = formData.holidays.filter((_, i) => i !== index)
+    setFormData({ ...formData, holidays: updatedHolidays })
 
     // Rebuild files and previews with corrected indices
-    const newFiles = {};
-    const newPreviews = {};
+    const newFiles = {}
+    const newPreviews = {}
 
     updatedHolidays.forEach((_, i) => {
       if (holidayFiles[i >= index ? i + 1 : i]) {
-        newFiles[i] = holidayFiles[i >= index ? i + 1 : i];
+        newFiles[i] = holidayFiles[i >= index ? i + 1 : i]
       }
       if (imagePreview[i >= index ? i + 1 : i]) {
-        newPreviews[i] = imagePreview[i >= index ? i + 1 : i];
+        newPreviews[i] = imagePreview[i >= index ? i + 1 : i]
       }
-    });
+    })
 
-    setHolidayFiles(newFiles);
-    setImagePreview(newPreviews);
-  };
+    setHolidayFiles(newFiles)
+    setImagePreview(newPreviews)
+  }
 
   const resetForm = () => {
-    setFormData(initialFormData);
-    setHolidayFiles({});
-    setIsEditing(null);
-    setValidationErrors({});
-    setShowForm(false);
-    setImagePreview({});
-  };
+    setFormData(initialFormData)
+    setHolidayFiles({})
+    setIsEditing(null)
+    setValidationErrors({})
+    setShowForm(false)
+    setImagePreview({})
+  }
 
   const validateForm = () => {
-    const errors = {};
+    const errors = {}
     if (!formData.state.trim()) {
-      errors.state = "State Name is required";
+      errors.state = 'State Name is required'
     }
 
     formData.holidays.forEach((h, index) => {
       if (!h.name.trim())
-        errors[`holidayName_${index}`] = "Holiday name is required";
-      if (!h.date) errors[`holidayDate_${index}`] = "Holiday date is required";
-    });
+        errors[`holidayName_${index}`] = 'Holiday name is required'
+      if (!h.date) errors[`holidayDate_${index}`] = 'Holiday date is required'
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateForm()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     }
 
-    const payload = new FormData();
-    payload.append("state", formData.state);
-    payload.append("rank", formData.rank);
+    const payload = new FormData()
+    payload.append('state', formData.state)
+    payload.append('rank', formData.rank)
 
-    payload.append("holidaysData", JSON.stringify(formData.holidays));
+    payload.append('holidaysData', JSON.stringify(formData.holidays))
 
     Object.keys(holidayFiles).forEach((index) => {
-      payload.append(`holiday_image_${index}`, holidayFiles[index]);
-    });
+      payload.append(`holiday_image_${index}`, holidayFiles[index])
+    })
 
     // for (let [key, value] of payload.entries()) {
     //   console.log(`${key}:`, value);
@@ -221,129 +221,142 @@ const Holiday = () => {
       const config = {
         ...getAuthHeaders(),
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
           ...getAuthHeaders().headers,
         },
-      };
+      }
       if (isEditing) {
         await axios.put(
-          `${API_URL}/api/holidays/${isEditing._id}`,
+          `${API_URL}/api/holidays/${isEditing.id}`,
           payload,
           config,
-        );
-        alert("Holiday updated successfully!");
+        )
+        alert('Holiday updated successfully!')
       } else {
-        await axios.post(`${API_URL}/api/holidays`, payload, config);
-        alert("Holiday created successfully!");
+        await axios.post(`${API_URL}/api/holidays`, payload, config)
+        alert('Holiday created successfully!')
       }
-      resetForm();
+      resetForm()
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
         alert(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
+          `Operation failed: ${err.response?.data?.message || 'Server error'}`,
+        )
     }
-  };
+  }
 
   const handleEdit = (holiday) => {
-    setIsEditing(holiday);
-    setValidationErrors({});
+    setIsEditing(holiday)
+
+    setValidationErrors({})
+
     setFormData({
-      state: holiday.state,
-      rank: holiday.rank,
-      holidays: holiday.holidays.map((h) => ({
-        _id: h._id, // keep for backend reference
-        name: h.name,
-        date: h.date ? h.date.split("T")[0] : "",
-        image: h.image || "",
+      state: holiday.state || '',
+      rank: holiday.rank || 'All',
+
+      holidays: (holiday.holidays || []).map((h) => ({
+        id: h.id,
+        name: h.holiday_name || '',
+        date: h.holiday_date || '',
+        image: h.image || '',
       })),
-    });
-    // console.log(holiday);
-    const previews = {};
-    holiday.holidays.forEach((h, index) => {
+    })
+
+    const previews = {}
+
+    ;(holiday.holidays || []).forEach((h, index) => {
       if (h.image) {
-        // console.log(h.image);
-        previews[index] = `${API_URL}/uploads/holidays/${h.image}`; // Adjust if needed
+        previews[index] = `${API_URL}/uploads/holidays/${h.image}`
       }
-    });
-    setImagePreview(previews);
-    setHolidayFiles({});
-    setShowForm(true);
-    setShowSearch(false);
-  };
+    })
+
+    setImagePreview(previews)
+
+    setHolidayFiles({})
+
+    setShowForm(true)
+
+    setShowSearch(false)
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this holiday?")) {
+    if (window.confirm('Are you sure you want to delete this holiday?')) {
       try {
-        await axios.delete(`${API_URL}/api/holidays/${id}`, getAuthHeaders());
-        alert("Holiday deleted!");
-        fetchHolidays();
+        await axios.delete(`${API_URL}/api/holidays/${id}`, getAuthHeaders())
+        alert('Holiday deleted!')
+        fetchHolidays()
       } catch (err) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-        } else alert("Delete failed!");
+          localStorage.removeItem('token')
+          window.location.href = '/login'
+        } else alert('Delete failed!')
       }
     }
-  };
+  }
 
-  const handleSearch = () => fetchHolidays();
+  const handleSearch = () => fetchHolidays()
   const handleReset = () => {
-    setSearchFields([{ field: "state", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    setTimeout(() => fetchHolidays(), 0);
-  };
+    setSearchFields([{ field: 'state', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    setTimeout(() => fetchHolidays(), 0)
+  }
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(`${API_URL}/api/holidays/export`, {
         params,
-        responseType: "blob", // IMPORTANT
+        responseType: 'blob', // IMPORTANT
         ...getAuthHeaders(),
-      });
+      })
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Holidays_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `Holidays_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
+
+  const uniqueRanks = [
+    ...new Set(
+      holidays.map((h) => h.rank).filter((rank) => rank && rank !== 'All'),
+    ),
+  ]
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
-          Holiday Master{" "}
+          Holiday Master{' '}
           <span className="text-success">({holidays.length})</span>
         </h1>
         <div className="page-actions">
@@ -351,14 +364,14 @@ const Holiday = () => {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           <button
             className="btn-primary"
             onClick={() => {
-              setShowSearch(false);
-              resetForm();
-              setShowForm(true);
+              setShowSearch(false)
+              resetForm()
+              setShowForm(true)
             }}
           >
             <FaPlus /> Add New Holiday
@@ -385,7 +398,7 @@ const Holiday = () => {
             {isEditing ? (
               <span>Edit Holiday - {isEditing.state}</span>
             ) : (
-              "Add New Holiday"
+              'Add New Holiday'
             )}
           </h2>
           {Object.keys(validationErrors).length > 0 && (
@@ -419,9 +432,10 @@ const Holiday = () => {
                     onChange={handleInputChange}
                   >
                     <option value="All">All Ranks</option>
-                    {employeeTypes.map((emp) => (
-                      <option key={emp._id || emp.id} value={emp.name}>
-                        {emp.name}
+
+                    {uniqueRanks.map((rank, index) => (
+                      <option key={index} value={rank}>
+                        {rank}
                       </option>
                     ))}
                   </Form.Select>
@@ -440,7 +454,7 @@ const Holiday = () => {
                         value={h.name}
                         placeholder="Holiday Name"
                         onChange={(e) =>
-                          handleHolidayRowChange(index, "name", e.target.value)
+                          handleHolidayRowChange(index, 'name', e.target.value)
                         }
                         isInvalid={!!validationErrors[`holidayName_${index}`]}
                       />
@@ -456,7 +470,7 @@ const Holiday = () => {
                         type="date"
                         value={h.date}
                         onChange={(e) =>
-                          handleHolidayRowChange(index, "date", e.target.value)
+                          handleHolidayRowChange(index, 'date', e.target.value)
                         }
                         isInvalid={!!validationErrors[`holidayDate_${index}`]}
                       />
@@ -483,11 +497,11 @@ const Holiday = () => {
                           src={imagePreview[index]}
                           alt={`Preview ${index}`}
                           style={{
-                            width: "180px",
-                            height: "200px",
+                            width: '180px',
+                            height: '200px',
                             // objectFit: "cover",
-                            border: "1px solid #ddd",
-                            borderRadius: "4px",
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
                           }}
                         />
                       </div>
@@ -496,7 +510,7 @@ const Holiday = () => {
                   <Col className="mb-3" md="auto">
                     <div
                       className="holiday-row-actions"
-                      style={{ paddingTop: "32px" }}
+                      style={{ paddingTop: '32px' }}
                     >
                       {formData.holidays.length > 1 && (
                         <Button
@@ -528,14 +542,14 @@ const Holiday = () => {
                 variant="secondary"
                 className="me-2"
                 onClick={() => {
-                  resetForm();
-                  setShowForm(false);
+                  resetForm()
+                  setShowForm(false)
                 }}
               >
                 Cancel
               </Button>
               <Button type="submit" variant="primary">
-                {isEditing ? "Update Holiday" : "Save Holiday"}
+                {isEditing ? 'Update Holiday' : 'Save Holiday'}
               </Button>
             </div>
           </Form>
@@ -570,13 +584,12 @@ const Holiday = () => {
                   </tr>
                 ) : (
                   holidays.map((h) => (
-                    <tr key={h._id}>
+                    <tr key={h.id}>
                       <td className="state-cell">{h.state}</td>
                       <td>{h.rank}</td>
-                      <td>{h.holidays.length}</td>
+                      <td>{h.holidays?.length || 0}</td>
                       <td>
-                        {h.created_by ? h.created_by.name : ""}
-                        <br />
+                        {h.created_by || ''} <br />
                         {h.created_on &&
                           new Date(h.created_on).toLocaleDateString()}
                       </td>
@@ -590,7 +603,7 @@ const Holiday = () => {
                             <FaPen />
                           </button>
                           <button
-                            onClick={() => handleDelete(h._id)}
+                            onClick={() => handleDelete(h.id)}
                             className="icon-btn delete"
                             title="Delete"
                           >
@@ -607,7 +620,7 @@ const Holiday = () => {
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Holiday;
+export default Holiday

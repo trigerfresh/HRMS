@@ -1,8 +1,8 @@
-import React from "react";
-import UserAccess from "../../components/userAccess/UserAccess";
+import React from 'react'
+import UserAccess from '../../components/userAccess/UserAccess'
 
 const UserAccessPage = () => {
-  return <UserAccess />;
-};
+  return <UserAccess />
+}
 
-export default UserAccessPage;
+export default UserAccessPage

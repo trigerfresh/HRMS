@@ -1,215 +1,333 @@
 // routes/charges.js
-const express = require("express");
-const router = express.Router();
-const Charge = require("../models/Charge");
-const authMiddleware = require("../middleware/authMiddleware");
-const xlsx = require("xlsx");
 
-// Get all charges with optional search and date filter
-// Get all charges with optional search and date filter
-router.get("/", authMiddleware, async (req, res) => {
+const express = require('express')
+const router = express.Router()
+const authMiddleware = require('../middleware/authMiddleware')
+const xlsx = require('xlsx')
+
+const { poolPromise, sql } = require('../config/db')
+
+// ==========================
+// GET ALL CHARGES
+// ==========================
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { searchFields, fromDate, toDate } = req.query;
+    const pool = await poolPromise
 
-    let query = { active: 0 };
+    const { searchFields, fromDate, toDate } = req.query
 
+    let whereClause = `WHERE active = '0'`
+
+    // Search Filters
     if (searchFields) {
-      const fields = JSON.parse(searchFields);
+      const fields = JSON.parse(searchFields)
+
       fields.forEach((field) => {
         if (field.field && field.keyword) {
-          query[field.field] = new RegExp(field.keyword, "i");
+          if (field.field === 'charges_master') {
+            whereClause += ` AND charges_master LIKE '%${field.keyword}%'`
+          }
+
+          if (field.field === 'label_display') {
+            whereClause += ` AND label_display LIKE '%${field.keyword}%'`
+          }
         }
-      });
+      })
     }
 
+    // Date Filter
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999); // include the entire end day
-
-      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-        query.created_on = { $gte: from, $lte: to };
-      }
+      whereClause += `
+        AND CAST(created_on AS DATE)
+        BETWEEN '${fromDate}' AND '${toDate}'
+      `
     }
 
-    const charges = await Charge.find(query)
-      .sort({ created_on: -1 })
-      .populate("created_by", "name");
+    const result = await pool.request().query(`
+      SELECT *
+      FROM charges_master
+      ${whereClause}
+      ORDER BY id DESC
+    `)
 
-    // 👉 Simple mode (for dropdowns)
-    if (req.query.simple === "true") {
+    const charges = result.recordset
+
+    // SIMPLE MODE
+    if (req.query.simple === 'true') {
       return res.json(
         charges.map((c) => ({
-          id: c._id,
-          name: c.chargesType, // 👈 "name" म्हणून chargesType परत कर
-        }))
-      );
+          id: c.id,
+          name: c.charges_master,
+        })),
+      )
     }
 
-    // Full response
-    res.json({ data: charges, success: true });
-  } catch (error) {
-    res.status(500).json({ message: error.message, success: false });
-  }
-});
-
-// Create a new charge
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    // console.log(req.body, req.user);
-    const newCharge = { ...req.body };
-
-    newCharge.created_by = req.user.id;
-    const charge = new Charge(newCharge);
-    console.log(charge);
-    await charge.save();
-    res.status(201).json({
-      data: charge,
+    return res.json({
+      data: charges,
       success: true,
-      message: "Charge created successfully",
-    });
+    })
   } catch (error) {
-    res.status(400).json({ message: error.message, success: false });
-  }
-});
+    console.error(error)
 
-function formatDateForExcel(val) {
-  if (!val && val !== 0) return "";
-  if (val instanceof Date && !isNaN(val.getTime())) {
-    const d = val;
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    })
   }
-  // If it's a string, return as-is
-  return String(val);
+})
+
+// ==========================
+// CREATE CHARGE
+// ==========================
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const pool = await poolPromise
+
+    await pool
+      .request()
+      .input(
+        'charges_master',
+        sql.VarChar(sql.MAX),
+        req.body.charges_master || '',
+      )
+      .input(
+        'label_display',
+        sql.VarChar(sql.MAX),
+        req.body.label_display || '',
+      )
+      .input('created_by', sql.VarChar(20), String(req.user.id || ''))
+      .input('branch_id', sql.VarChar(20), req.body.branch_id || '')
+      .input('company_id', sql.VarChar(20), req.body.company_id || '').query(`
+        INSERT INTO charges_master
+        (
+          charges_master,
+          label_display,
+          active,
+          created_by,
+          created_on,
+          branch_id,
+          company_id
+        )
+        VALUES
+        (
+          @charges_master,
+          @label_display,
+          '0',
+          @created_by,
+          CONVERT(VARCHAR(10), GETDATE(), 103),
+          @branch_id,
+          @company_id
+        )
+      `)
+
+    return res.status(201).json({
+      success: true,
+      message: 'Charge created successfully',
+    })
+  } catch (error) {
+    console.error(error)
+
+    return res.status(400).json({
+      message: error.message,
+      success: false,
+    })
+  }
+})
+
+// ==========================
+// EXPORT EXCEL
+// ==========================
+function formatDateForExcel(val) {
+  if (!val && val !== 0) return ''
+
+  const d = new Date(val)
+
+  if (!isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yyyy = d.getFullYear()
+
+    return `${dd}-${mm}-${yyyy}`
+  }
+
+  return String(val)
 }
 
-router.get("/export", authMiddleware, async (req, res) => {
+router.get('/export', authMiddleware, async (req, res) => {
   try {
-    const { searchFields, fromDate, toDate } = req.query;
+    const pool = await poolPromise
 
-    let query = { active: 0 };
+    const { searchFields, fromDate, toDate } = req.query
 
+    let whereClause = `WHERE active = '0'`
+
+    // Search
     if (searchFields) {
-      const fields = JSON.parse(searchFields);
+      const fields = JSON.parse(searchFields)
+
       fields.forEach((field) => {
         if (field.field && field.keyword) {
-          query[field.field] = new RegExp(field.keyword, "i");
+          if (field.field === 'charges_master') {
+            whereClause += ` AND charges_master LIKE '%${field.keyword}%'`
+          }
+
+          if (field.field === 'label_display') {
+            whereClause += ` AND label_display LIKE '%${field.keyword}%'`
+          }
         }
-      });
+      })
     }
 
+    // Date
     if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999);
-      query.created_on = { $gte: from, $lte: to };
+      whereClause += `
+        AND CAST(created_on AS DATE)
+        BETWEEN '${fromDate}' AND '${toDate}'
+      `
     }
 
-    const charges = await Charge.find(query)
-      .sort({ created_on: -1 })
-      .populate("created_by", "name");
+    const result = await pool.request().query(`
+      SELECT *
+      FROM charges
+      ${whereClause}
+      ORDER BY id DESC
+    `)
 
-    // DEFINE HEADERS
-    const headers = ["Charges Type", "Label To Display", "Created On"];
+    const charges = result.recordset
 
-    // PREPARE ROWS
+    // HEADERS
+    const headers = ['Charges Master', 'Label Display', 'Created On']
+
+    // ROWS
     const excelRows = charges.map((c) => [
-      c.chargesType || "",
-      c.labelToDisplay || "",
-      c.created_on ? formatDateForExcel(c.created_on) : "",
-    ]);
+      c.charges_master || '',
+      c.label_display || '',
+      c.created_on ? formatDateForExcel(c.created_on) : '',
+    ])
 
-    // Final sheet data (headers + rows)
-    const finalSheetData = [headers, ...excelRows];
+    const finalSheetData = [headers, ...excelRows]
 
-    // CREATE WORKBOOK
-    const worksheet = xlsx.utils.aoa_to_sheet(finalSheetData);
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "ChargesType");
+    const worksheet = xlsx.utils.aoa_to_sheet(finalSheetData)
 
-    // Random 10-digit number
-    const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
-    const fileName = `ChargesType_${randomNumber}.xlsx`;
+    const workbook = xlsx.utils.book_new()
 
-    // Write to buffer
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Charges')
+
+    const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
+
+    const fileName = `Charges_${randomNumber}.xlsx`
+
     const excelBuffer = xlsx.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
+      type: 'buffer',
+      bookType: 'xlsx',
+    })
 
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+
     res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
 
-    res.send(excelBuffer);
+    res.send(excelBuffer)
   } catch (error) {
-    console.error("DOWNLOAD CHARGES TYPE EXCEL ERROR:", error);
-    res.status(500).json({ message: "Failed to download Excel" });
+    console.error('DOWNLOAD CHARGES EXCEL ERROR:', error)
+
+    return res.status(500).json({
+      message: 'Failed to download Excel',
+    })
   }
-});
+})
 
-// Update a charge
-router.put("/:id", authMiddleware, async (req, res) => {
+// ==========================
+// UPDATE CHARGE
+// ==========================
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    console.log(req.body);
-    const charge = await Charge.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          ...req.body,
-          modified_on: new Date(),
-          modified_by: req.user.id,
-        },
-      },
-      { new: true }
-    );
+    const pool = await poolPromise
 
-    if (!charge) {
-      return res
-        .status(404)
-        .json({ message: "Charge not found", success: false });
+    const result = await pool
+      .request()
+      .input('id', sql.Int, req.params.id)
+      .input(
+        'charges_master',
+        sql.VarChar(sql.MAX),
+        req.body.charges_master || '',
+      )
+      .input(
+        'label_display',
+        sql.VarChar(sql.MAX),
+        req.body.label_display || '',
+      )
+      .input('modified_by', sql.VarChar(20), String(req.user.id || '')).query(`
+        UPDATE charges_master
+        SET
+          charges_master = @charges_master,
+          label_display = @label_display,
+          modified_by = @modified_by,
+          modified_on = CONVERT(VARCHAR(10), GETDATE(), 103)
+        WHERE id = @id
+      `)
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: 'Charge not found',
+        success: false,
+      })
     }
 
-    res.json({
-      data: charge,
+    return res.json({
       success: true,
-      message: "Charge updated successfully",
-    });
+      message: 'Charge updated successfully',
+    })
   } catch (error) {
-    res.status(400).json({ message: error.message, success: false });
+    console.error(error)
+
+    return res.status(400).json({
+      message: error.message,
+      success: false,
+    })
   }
-});
+})
 
-// Delete a charge
-router.delete("/:id", authMiddleware, async (req, res) => {
+// ==========================
+// DELETE CHARGE
+// ==========================
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const charge = await Charge.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          active: 1,
-          disabled_on: new Date(),
-          disabled_by: req.user.id,
-        },
-      },
-      { new: true }
-    );
+    const pool = await poolPromise
 
-    if (!charge) {
-      return res
-        .status(404)
-        .json({ message: "Charge not found", success: false });
+    const result = await pool
+      .request()
+      .input('id', sql.Int, req.params.id)
+      .input('disabled_by', sql.VarChar(20), String(req.user.id || '')).query(`
+        UPDATE charges_master
+        SET
+          active = '1',
+          disabled_by = @disabled_by,
+          disabled_on = GETDATE()
+        WHERE id = @id
+      `)
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        message: 'Charge not found',
+        success: false,
+      })
     }
 
-    res.json({ message: "Charge deleted successfully", success: true });
+    return res.json({
+      message: 'Charge deleted successfully',
+      success: true,
+    })
   } catch (error) {
-    res.status(500).json({ message: error.message, success: false });
-  }
-});
+    console.error(error)
 
-module.exports = router;
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    })
+  }
+})
+
+module.exports = router

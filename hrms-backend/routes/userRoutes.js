@@ -1,5 +1,5 @@
 const sql = require('mssql')
-const config = require('../config/db')
+const { poolPromise } = require('../config/db')
 const express = require('express')
 const router = express.Router()
 const userController = require('../controllers/userController')
@@ -42,43 +42,38 @@ router.get('/roles', userController.getRoles)
 //clients
 router.get('/clients', async (req, res) => {
   try {
-    const pool = await sql.connect(config)
+    const pool = await poolPromise
 
     const query = `
-      SELECT 
+      SELECT DISTINCT
           nc.id,
           nc.company_name,
           nc.contact_person,
           nc.client_email,
           nc.contact_no
       FROM new_client nc
-      INNER JOIN users u 
-          ON u.client_id = CAST(nc.id AS VARCHAR)
+      INNER JOIN users u
+          ON LTRIM(RTRIM(u.client_id)) = CAST(nc.id AS VARCHAR(50))
       WHERE nc.active = '0'
-      GROUP BY 
-          nc.id,
-          nc.company_name,
-          nc.contact_person,
-          nc.client_email,
-          nc.contact_no
       ORDER BY nc.company_name ASC
     `
 
     const result = await pool.request().query(query)
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: result.recordset,
     })
   } catch (error) {
-    console.error(error)
+    console.error('CLIENT API ERROR =>', error)
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     })
   }
 })
+
 router.get('/export', authMiddleware, userController.exportUsersToExcel)
 
 module.exports = router

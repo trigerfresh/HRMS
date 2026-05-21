@@ -1,43 +1,83 @@
-const express = require("express");
-const router = express.Router();
-const holidayController = require("../controllers/holidayController");
-const authMiddleware = require("../middleware/authMiddleware");
+const express = require('express')
+const router = express.Router()
 
-// Multer upload setup
-const multer = require("multer");
+const holidayController = require('../controllers/holidayController')
+const authMiddleware = require('../middleware/authMiddleware')
+
+const multer = require('multer')
+
+/* =====================================================
+   MULTER CONFIG
+===================================================== */
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/holidays/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/holidays/')
+  },
 
-// Upload field mapping (handle multiple file fields with different names)
-const uploadFields = [];
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname)
+  },
+})
+
+const upload = multer({ storage })
+
+/* =====================================================
+   MULTIPLE IMAGE FIELDS
+===================================================== */
+
+const uploadFields = []
+
 for (let i = 0; i < 20; i++) {
-  uploadFields.push({ name: `holiday_image_${i}`, maxCount: 1 });
+  uploadFields.push({
+    name: `holiday_image_${i}`,
+    maxCount: 1,
+  })
 }
 
-// Create new
+/* =====================================================
+   CREATE HOLIDAY
+   POST /api/holidays
+===================================================== */
+
 router.post(
-  "/",
+  '/',
   authMiddleware,
   upload.fields(uploadFields),
-  holidayController.createHoliday
-);
+  holidayController.createHoliday,
+)
 
-// List all
-router.get("/", holidayController.getHolidays);
-router.get("/export", holidayController.exportHolidaysToExcel);
+/* =====================================================
+   GET HOLIDAYS
+   GET /api/holidays
+===================================================== */
 
-// Update
+router.get('/', authMiddleware, holidayController.getHolidays)
+
+/* =====================================================
+   EXPORT EXCEL
+   GET /api/holidays/export
+===================================================== */
+
+router.get('/export', authMiddleware, holidayController.exportHolidaysToExcel)
+
+/* =====================================================
+   UPDATE HOLIDAY
+   PUT /api/holidays/:id
+===================================================== */
+
 router.put(
-  "/:id",
+  '/:id',
   authMiddleware,
   upload.fields(uploadFields),
-  holidayController.updateHoliday
-);
+  holidayController.updateHoliday,
+)
 
-// Delete
-router.delete("/:id", authMiddleware, holidayController.deleteHoliday);
+/* =====================================================
+   DELETE HOLIDAY
+   DELETE /api/holidays/:id
+===================================================== */
 
-module.exports = router;
+router.delete('/:id', authMiddleware, holidayController.deleteHoliday)
+
+module.exports = router

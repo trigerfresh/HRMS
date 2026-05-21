@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import {
   Alert,
   Button,
@@ -9,10 +9,10 @@ import {
   Modal,
   Row,
   Table,
-} from "react-bootstrap";
-import { FaMinus, FaPen, FaPlus, FaTrashAlt } from "react-icons/fa";
+} from 'react-bootstrap'
+import { FaMinus, FaPen, FaPlus, FaTrashAlt } from 'react-icons/fa'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const ClientForm = ({
   onSave,
@@ -26,120 +26,120 @@ const ClientForm = ({
   woRateChart,
   wagesSettings,
 }) => {
-  const [step, setStep] = useState(1);
-  const [showOtherModal, setShowOtherModal] = useState(false);
-  const [employeeTypes, setEmployeeTypes] = useState([]);
-  const [chargeTypes, setChargeTypes] = useState([]);
-  const [error, setError] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [billingCompanyBanks, setBillingCompanyBanks] = useState([]);
-  const [clientSites, setClientSites] = useState([]);
+  const [step, setStep] = useState(1)
+  const [showOtherModal, setShowOtherModal] = useState(false)
+  const [employeeTypes, setEmployeeTypes] = useState([])
+  const [chargeTypes, setChargeTypes] = useState([])
+  const [error, setError] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
+  const [billingCompanyBanks, setBillingCompanyBanks] = useState([])
+  const [clientSites, setClientSites] = useState([])
 
   const initialFormData = {
-    companyName: "",
-    contactNo: "",
-    emailId: "",
-    contactPersonName: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    gstStateCode: "",
-    gstNo: "",
-    sacCode: "",
-    companyBankName: "",
-    billingCompany: "",
-    otherInfo: "",
-    termsAndConditions: "",
-    bankName: "",
-    accountNo: "",
-    ifscCode: "",
-    micrCode: "",
-    branch: "",
-    bankCity: "",
-  };
+    companyName: '',
+    contactNo: '',
+    emailId: '',
+    contactPersonName: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    gstStateCode: '',
+    gstNo: '',
+    sacCode: '',
+    companyBankName: '',
+    billingCompany: '',
+    otherInfo: '',
+    termsAndConditions: '',
+    bankName: '',
+    accountNo: '',
+    ifscCode: '',
+    micrCode: '',
+    branch: '',
+    bankCity: '',
+  }
 
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState(initialFormData)
 
   const [siteDetails, setSiteDetails] = useState({
-    siteName: "",
-    workOrderNo: "",
-    contactPersonName: "",
-    address: "",
-    billingAddress: "",
-    contactNo: "",
-    emailId: "",
-    city: "",
-    state: "",
-    country: "",
-    locationName: "",
-    locationStartDate: "",
-    salesPersonName: "",
-    salesPersonEmailId: "",
-    salesPersonContactNo: "",
-    billCycleDate: "",
-    status: "Active",
-    cgst: "",
-    sgst: "",
-    igst: "",
-    expectedBillingAmount: "",
-    daysForBilling: "",
+    siteName: '',
+    workOrderNo: '',
+    contactPersonName: '',
+    address: '',
+    billingAddress: '',
+    contactNo: '',
+    emailId: '',
+    city: '',
+    state: '',
+    country: '',
+    locationName: '',
+    locationStartDate: '',
+    salesPersonName: '',
+    salesPersonEmailId: '',
+    salesPersonContactNo: '',
+    billCycleDate: '',
+    status: 'Active',
+    cgst: '',
+    sgst: '',
+    igst: '',
+    expectedBillingAmount: '',
+    daysForBilling: '',
     viewOTHours: false,
     attachWagesSHeet: false,
     roundOffAmount: false,
     billWithoutRank: false,
     nonComplianceSite: false,
     applyLeave: false,
-  });
+  })
 
   const [otherDetails, setOtherDetails] = useState([
     {
-      typeOfServ: "",
-      chargesType: "",
-      charges: "",
-      calcOn: "",
-      calcOperation: "",
-      amountToCompare: "",
+      typeOfServ: '',
+      chargesType: '',
+      charges: '',
+      calcOn: '',
+      calcOperation: '',
+      amountToCompare: '',
     },
-  ]);
+  ])
 
   const [rateRows, setRateRows] = useState([
     {
-      empType: "",
-      hours: "",
-      nos: "",
-      basic: "",
-      hra: "",
-      da: "",
-      specialAllowance: "",
-      otherAllowance: "",
-      lww: "",
-      bonus: "",
-      costPerHeadGross: "",
-      serviceChargesType: "",
-      serviceCharges: "",
-      perDayRate: "",
-      otRate: "",
-      leaveWages: "",
-      uniformWashing: "",
-      anyOther: "",
+      empType: '',
+      hours: '',
+      nos: '',
+      basic: '',
+      hra: '',
+      da: '',
+      specialAllowance: '',
+      otherAllowance: '',
+      lww: '',
+      bonus: '',
+      costPerHeadGross: '',
+      serviceChargesType: '',
+      serviceCharges: '',
+      perDayRate: '',
+      otRate: '',
+      leaveWages: '',
+      uniformWashing: '',
+      anyOther: '',
     },
-  ]);
+  ])
 
   // Auth helper function
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (!token) {
-      console.error("No token found in localStorage");
-      return {};
+      console.error('No token found in localStorage')
+      return {}
     }
 
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
-  };
+    }
+  }
 
   // --- Data Fetching for Dropdowns ---
   useEffect(() => {
@@ -150,11 +150,11 @@ const ClientForm = ({
           const { data } = await axios.get(
             `${API_URL}/api/employee-types?simple=true`,
             getAuthHeaders(),
-          );
-          setEmployeeTypes(Array.isArray(data) ? data : []);
+          )
+          setEmployeeTypes(Array.isArray(data) ? data : [])
         } catch (empError) {
-          console.warn("Failed to fetch employee types:", empError);
-          setEmployeeTypes([]);
+          console.warn('Failed to fetch employee types:', empError)
+          setEmployeeTypes([])
         }
 
         // Fetch charge types
@@ -162,82 +162,82 @@ const ClientForm = ({
           const { data } = await axios.get(
             `${API_URL}/api/charges?simple=true`,
             getAuthHeaders(),
-          );
-          setChargeTypes(Array.isArray(data) ? data : []);
+          )
+          setChargeTypes(Array.isArray(data) ? data : [])
         } catch (chargeError) {
-          console.warn("Failed to fetch charge types:", chargeError);
-          setChargeTypes([]);
+          console.warn('Failed to fetch charge types:', chargeError)
+          setChargeTypes([])
         }
       } catch (err) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         } else {
-          setError("Failed to load dropdown data");
+          setError('Failed to load dropdown data')
         }
-        console.error("Error in fetchDropdownData:", err);
+        console.error('Error in fetchDropdownData:', err)
       }
-    };
-    fetchDropdownData();
-    stepCount > 0 ? setStep(stepCount) : "";
-  }, []);
+    }
+    fetchDropdownData()
+    stepCount > 0 ? setStep(stepCount) : ''
+  }, [])
 
   useEffect(() => {
     if (clientToEdit) {
-      const mergedData = { ...initialFormData, ...clientToEdit };
+      const mergedData = { ...initialFormData, ...clientToEdit }
       // Extract bank details if they exist
 
       if (clientToEdit.bankDetails) {
-        const bank = clientToEdit.bankDetails;
-        mergedData.bankName = bank.bankName || "";
-        mergedData.accountNo = bank.accountNo || "";
-        mergedData.ifscCode = bank.ifscCode || "";
-        mergedData.micrCode = bank.micrCode || "";
-        mergedData.branch = bank.branch || "";
-        mergedData.bankCity = bank.city || "";
+        const bank = clientToEdit.bankDetails
+        mergedData.bankName = bank.bankName || ''
+        mergedData.accountNo = bank.accountNo || ''
+        mergedData.ifscCode = bank.ifscCode || ''
+        mergedData.micrCode = bank.micrCode || ''
+        mergedData.branch = bank.branch || ''
+        mergedData.bankCity = bank.city || ''
       }
-      const selectedId = mergedData.billingCompany?._id;
+      const selectedId = mergedData.billingCompany?._id
 
-      const selectedCompany = companies.find((c) => c._id === selectedId);
+      const selectedCompany = companies.find((c) => c._id === selectedId)
 
       // update form data and bank list
       setFormData((prev) => ({
         ...prev,
         billingCompany: selectedId,
-      }));
+      }))
 
       // set banks if company has any
       if (selectedCompany && selectedCompany.bankDetails) {
-        setBillingCompanyBanks(selectedCompany.bankDetails);
+        setBillingCompanyBanks(selectedCompany.bankDetails)
       } else {
-        setBillingCompanyBanks([]);
+        setBillingCompanyBanks([])
       }
-      setFormData(mergedData);
+      setFormData(mergedData)
       // console.log(mergedData.sites);
-      setClientSites(mergedData.sites);
+      setClientSites(mergedData.sites)
     }
-  }, [clientToEdit]);
+  }, [clientToEdit])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const hasValidationErrors = (errors) => {
-    if (!errors || typeof errors !== "object") return false;
+    if (!errors || typeof errors !== 'object') return false
 
     // 🔹 Check field-level errors
     const fieldErrorsExist = Object.entries(errors)
-      .filter(([key]) => key !== "rateRowErrors" && key !== "otherDetailErrors")
-      .some(([_, msg]) => msg && msg.toString().trim() !== "");
+      .filter(([key]) => key !== 'rateRowErrors' && key !== 'otherDetailErrors')
+      .some(([_, msg]) => msg && msg.toString().trim() !== '')
 
     // 🔹 Check rate row errors
     const rateErrorsExist = Array.isArray(errors.rateRowErrors)
@@ -245,10 +245,10 @@ const ClientForm = ({
           (row) =>
             row &&
             Object.values(row).some(
-              (val) => val && val.toString().trim() !== "",
+              (val) => val && val.toString().trim() !== '',
             ),
         )
-      : false;
+      : false
 
     // 🔹 Check other details errors
     const otherErrorsExist = Array.isArray(errors.otherDetailErrors)
@@ -256,161 +256,161 @@ const ClientForm = ({
           (row) =>
             row &&
             Object.values(row).some(
-              (val) => val && val.toString().trim() !== "",
+              (val) => val && val.toString().trim() !== '',
             ),
         )
-      : false;
+      : false
 
-    return fieldErrorsExist || rateErrorsExist || otherErrorsExist;
-  };
+    return fieldErrorsExist || rateErrorsExist || otherErrorsExist
+  }
 
   const handleSiteDetailChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const key = name;
+    const { name, value, type, checked } = e.target
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
     setSiteDetails((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
 
   const handleRateRowChange = (index, field, value) => {
     setRateRows((prevRows) => {
-      const updated = [...prevRows];
-      const row = { ...updated[index], [field]: value };
+      const updated = [...prevRows]
+      const row = { ...updated[index], [field]: value }
 
       if (validationErrors?.rateRowErrors?.[index]?.[field]) {
         setValidationErrors((prev) => {
-          const newRateRowErrors = [...(prev.rateRowErrors || [])];
+          const newRateRowErrors = [...(prev.rateRowErrors || [])]
           if (newRateRowErrors[index]) {
-            newRateRowErrors[index][field] = "";
+            newRateRowErrors[index][field] = ''
           }
-          return { ...prev, rateRowErrors: newRateRowErrors };
-        });
+          return { ...prev, rateRowErrors: newRateRowErrors }
+        })
       }
 
-      const num = (v) => (v && !isNaN(v) ? parseFloat(v) : 0);
+      const num = (v) => (v && !isNaN(v) ? parseFloat(v) : 0)
 
       const grossFields = [
-        "basic",
-        "hra",
-        "da",
-        "specialAllowance",
-        "otherAllowance",
-        "lww",
-        "bonus",
-      ];
+        'basic',
+        'hra',
+        'da',
+        'specialAllowance',
+        'otherAllowance',
+        'lww',
+        'bonus',
+      ]
 
       if (grossFields.includes(field)) {
         const totalGross = grossFields.reduce(
           (sum, key) => sum + num(row[key]),
           0,
-        );
-        row.costPerHeadGross = Number(totalGross).toFixed(2);
+        )
+        row.costPerHeadGross = Number(totalGross).toFixed(2)
 
         const days = siteDetails?.daysForBilling
           ? num(siteDetails.daysForBilling)
-          : 30;
+          : 30
 
-        row.perDayRate = days > 0 ? Number((totalGross / days).toFixed(2)) : 0;
+        row.perDayRate = days > 0 ? Number((totalGross / days).toFixed(2)) : 0
       }
 
-      updated[index] = row;
-      return updated;
-    });
-  };
+      updated[index] = row
+      return updated
+    })
+  }
 
   const addRateRow = () => {
     setRateRows((prev) => [
       ...prev,
       {
-        empType: "",
-        hours: "",
-        nos: "",
-        basic: "",
-        hra: "",
-        da: "",
-        specialAllowance: "",
-        otherAllowance: "",
-        lww: "",
-        bonus: "",
-        costPerHeadGross: "",
-        serviceChargesType: "",
-        serviceCharges: "",
-        perDayRate: "",
-        otRate: "",
-        leaveWages: "",
-        uniformWashing: "",
-        anyOther: "",
+        empType: '',
+        hours: '',
+        nos: '',
+        basic: '',
+        hra: '',
+        da: '',
+        specialAllowance: '',
+        otherAllowance: '',
+        lww: '',
+        bonus: '',
+        costPerHeadGross: '',
+        serviceChargesType: '',
+        serviceCharges: '',
+        perDayRate: '',
+        otRate: '',
+        leaveWages: '',
+        uniformWashing: '',
+        anyOther: '',
       },
-    ]);
-  };
+    ])
+  }
 
   // Delete a row
   const deleteRateRow = (index) => {
-    setRateRows((prev) => prev.filter((_, i) => i !== index));
-  };
+    setRateRows((prev) => prev.filter((_, i) => i !== index))
+  }
 
   // Handle changes in a specific row/field
   const handleOtherDetailChange = (index, field, value) => {
-    const updated = [...otherDetails];
-    updated[index][field] = value;
+    const updated = [...otherDetails]
+    updated[index][field] = value
 
     if (validationErrors?.otherDetailErrors?.[index]?.[field]) {
       setValidationErrors((prev) => {
-        const newErrors = [...(prev.otherDetailErrors || [])];
+        const newErrors = [...(prev.otherDetailErrors || [])]
         if (newErrors[index]) {
-          newErrors[index][field] = "";
+          newErrors[index][field] = ''
         }
-        return { ...prev, otherDetailErrors: newErrors };
-      });
+        return { ...prev, otherDetailErrors: newErrors }
+      })
     }
-    setOtherDetails(updated);
-  };
+    setOtherDetails(updated)
+  }
 
   // Add a new row
   const addOtherDetailRow = () => {
     setOtherDetails((prev) => [
       ...prev,
       {
-        typeOfServ: "",
-        chargesType: "",
-        charges: "",
-        calcOn: "",
-        calcOperation: "",
-        amountToCompare: "",
+        typeOfServ: '',
+        chargesType: '',
+        charges: '',
+        calcOn: '',
+        calcOperation: '',
+        amountToCompare: '',
       },
-    ]);
-  };
+    ])
+  }
 
   // Delete a specific row
   const deleteOtherDetailRow = (index) => {
-    setOtherDetails((prev) => prev.filter((_, i) => i !== index));
-  };
+    setOtherDetails((prev) => prev.filter((_, i) => i !== index))
+  }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-  const pincodeRegex = /^[1-9][0-9]{5}$/;
-  const contactRegex = /^[0-9]{10}$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
+  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
+  const pincodeRegex = /^[1-9][0-9]{5}$/
+  const contactRegex = /^[0-9]{10}$/
 
   const getTableErrorMessages = (validationErrors) => {
-    const messages = [];
+    const messages = []
 
     // Rate rows
     if (validationErrors?.rateRowErrors?.length) {
       validationErrors.rateRowErrors.forEach((rowErr, i) => {
         if (rowErr) {
           Object.entries(rowErr).forEach(([field, msg]) => {
-            if (msg) messages.push(`Rate Row ${i + 1}: ${msg}`);
-          });
+            if (msg) messages.push(`Rate Row ${i + 1}: ${msg}`)
+          })
         }
-      });
+      })
     }
 
     // Other details
@@ -418,109 +418,109 @@ const ClientForm = ({
       validationErrors.otherDetailErrors.forEach((rowErr, i) => {
         if (rowErr) {
           Object.entries(rowErr).forEach(([field, msg]) => {
-            if (msg) messages.push(`Other Detail Row ${i + 1}: ${msg}`);
-          });
+            if (msg) messages.push(`Other Detail Row ${i + 1}: ${msg}`)
+          })
         }
-      });
+      })
     }
 
-    return messages;
-  };
+    return messages
+  }
 
   // Step Validation
   const validateStep1 = () => {
-    const errors = {};
+    const errors = {}
     // console.log(formData);
     if (!formData.companyName?.trim())
-      errors.companyName = "Company Name is required";
+      errors.companyName = 'Company Name is required'
     if (!formData.emailId?.trim()) {
-      errors.emailId = "Email ID is required";
+      errors.emailId = 'Email ID is required'
     } else if (!emailRegex.test(formData.emailId)) {
-      errors.emailId = "Invalid email format.";
+      errors.emailId = 'Invalid email format.'
     }
     if (!formData.contactPersonName?.trim())
-      errors.contactPersonName = "Contact Person Name is required";
+      errors.contactPersonName = 'Contact Person Name is required'
     if (formData.contactNo && !contactRegex.test(formData.contactNo))
-      errors.contactNo = "Contact number must be 10 digits";
+      errors.contactNo = 'Contact number must be 10 digits'
     if (formData.pincode && !pincodeRegex.test(formData.pincode)) {
-      errors.pincode = "Please enter a valid 6-digit Pincode.";
+      errors.pincode = 'Please enter a valid 6-digit Pincode.'
     }
     if (formData.gstStateCode && isNaN(formData.gstStateCode)) {
-      errors.gstStateCode = "GST State Code must be a number.";
+      errors.gstStateCode = 'GST State Code must be a number.'
     }
     if (formData.gstNo && !gstRegex.test(formData.gstNo))
-      errors.gstNo = "Invalid GST Format.";
+      errors.gstNo = 'Invalid GST Format.'
     // errors.gstNo = "GST number must be 15 alphanumeric characters.";
     if (formData.sacCode && !pincodeRegex.test(formData.sacCode)) {
-      errors.sacCode = "Please enter a valid 6-digit SAC Code.";
+      errors.sacCode = 'Please enter a valid 6-digit SAC Code.'
     }
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const validateStep2 = () => {
-    const errors = {};
+    const errors = {}
 
-    if (!formData.bankName?.trim()) errors.bankName = "Bank Name is required";
+    if (!formData.bankName?.trim()) errors.bankName = 'Bank Name is required'
     if (!formData.accountNo?.trim()) {
-      errors.accountNo = "Account No is required";
+      errors.accountNo = 'Account No is required'
     } else if (!/^[0-9]{6,18}$/.test(formData.accountNo)) {
-      errors.accountNo = "Account number must be 6-18 digits";
+      errors.accountNo = 'Account number must be 6-18 digits'
     }
     if (!formData.ifscCode?.trim()) {
-      errors.ifscCode = "IFSC Code is required";
+      errors.ifscCode = 'IFSC Code is required'
     } else if (!ifscRegex.test(formData.ifscCode)) {
-      errors.ifscCode = "Invalid IFSC code";
+      errors.ifscCode = 'Invalid IFSC code'
     }
     if (formData.micrCode && !/^[0-9]{9}$/.test(formData.micrCode)) {
-      errors.micrCode = "MICR Code must be 9 digits.";
+      errors.micrCode = 'MICR Code must be 9 digits.'
     }
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const validateStep3 = () => {
-    const errors = {};
-    const rateRowErrors = [];
-    const otherDetailErrors = [];
+    const errors = {}
+    const rateRowErrors = []
+    const otherDetailErrors = []
 
     // --- SITE DETAILS VALIDATION ---
     if (!siteDetails.siteName?.trim()) {
-      errors.siteName = "Site Name is required.";
+      errors.siteName = 'Site Name is required.'
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (siteDetails.emailId && !emailRegex.test(siteDetails.emailId)) {
-      errors.emailId = "Invalid Email ID format.";
+      errors.emailId = 'Invalid Email ID format.'
     }
     if (
       siteDetails.salesPersonEmailId &&
       !emailRegex.test(siteDetails.salesPersonEmailId)
     ) {
-      errors.salesPersonEmailId = "Invalid Sales Person Email format.";
+      errors.salesPersonEmailId = 'Invalid Sales Person Email format.'
     }
 
-    const contactRegex = /^[0-9]{10}$/;
+    const contactRegex = /^[0-9]{10}$/
     if (siteDetails.contactNo && !contactRegex.test(siteDetails.contactNo)) {
-      errors.contactNo = "Contact number must be 10 digits.";
+      errors.contactNo = 'Contact number must be 10 digits.'
     }
     if (
       siteDetails.salesPersonContactNo &&
       !contactRegex.test(siteDetails.salesPersonContactNo)
     ) {
-      errors.salesPersonContactNo = "Sales Person contact must be 10 digits.";
+      errors.salesPersonContactNo = 'Sales Person contact must be 10 digits.'
     }
 
     // --- TAX / NUMERIC FIELDS ---
-    const taxFields = ["cgst", "sgst", "igst"];
+    const taxFields = ['cgst', 'sgst', 'igst']
     taxFields.forEach((field) => {
-      const val = siteDetails[field];
-      if (val !== "" && val !== undefined && val !== null) {
+      const val = siteDetails[field]
+      if (val !== '' && val !== undefined && val !== null) {
         if (isNaN(val) || val < 0 || val > 100) {
-          errors[field] = `${field.toUpperCase()} must be between 0 and 100.`;
+          errors[field] = `${field.toUpperCase()} must be between 0 and 100.`
         }
       }
-    });
+    })
 
     if (
       siteDetails.expectedBillingAmount &&
@@ -528,7 +528,7 @@ const ClientForm = ({
         Number(siteDetails.expectedBillingAmount) < 0)
     ) {
       errors.expectedBillingAmount =
-        "Expected billing amount must be a valid number.";
+        'Expected billing amount must be a valid number.'
     }
 
     if (
@@ -536,7 +536,7 @@ const ClientForm = ({
       (isNaN(siteDetails.daysForBilling) ||
         Number(siteDetails.daysForBilling) < 0)
     ) {
-      errors.daysForBilling = "Days for billing must be a valid number.";
+      errors.daysForBilling = 'Days for billing must be a valid number.'
     }
 
     // --- RATE ROWS VALIDATION ---
@@ -556,29 +556,28 @@ const ClientForm = ({
 
     // --- OTHER DETAILS VALIDATION ---
     otherDetails.forEach((row, i) => {
-      const rowErr = {};
+      const rowErr = {}
       // console.log(row.amountToCompare);
       if (row.amountToCompare?.trim()) {
-        const amt = row.amountToCompare.trim();
+        const amt = row.amountToCompare.trim()
 
         // Case 1: Single number (integer or decimal)
         if (/^\d+(\.\d+)?$/.test(amt)) {
-          const num = Number(amt);
+          const num = Number(amt)
           if (isNaN(num)) {
-            rowErr.amountToCompare =
-              "Amount to Compare must be a valid number.";
+            rowErr.amountToCompare = 'Amount to Compare must be a valid number.'
           }
           // console.log("1");
         }
 
         // Case 2: Range — two valid numbers separated by a hyphen
         else if (/^\d+(\.\d+)?-\d+(\.\d+)?$/.test(amt)) {
-          const [min, max] = amt.split("-").map((v) => Number(v));
+          const [min, max] = amt.split('-').map((v) => Number(v))
           if (isNaN(min) || isNaN(max)) {
-            rowErr.amountToCompare = "Both values in range must be numbers.";
+            rowErr.amountToCompare = 'Both values in range must be numbers.'
           } else if (min >= max) {
             rowErr.amountToCompare =
-              "Invalid range: first value must be less than second value.";
+              'Invalid range: first value must be less than second value.'
           }
           // console.log("2gh");
         }
@@ -587,7 +586,7 @@ const ClientForm = ({
         else {
           // console.log("3");
           rowErr.amountToCompare =
-            "Enter a valid number or range (e.g., 5000 or 4000-6000).";
+            'Enter a valid number or range (e.g., 5000 or 4000-6000).'
         }
       }
 
@@ -601,90 +600,90 @@ const ClientForm = ({
       //     rowErr.calcOperation = "Calculation Operation is required.";
       //   if (row.amountToCompare && isNaN(row.amountToCompare))
       //     rowErr.amountToCompare = "Amount to compare must be a number.";
-      if (Object.keys(rowErr).length > 0) otherDetailErrors[i] = rowErr;
-    });
+      if (Object.keys(rowErr).length > 0) otherDetailErrors[i] = rowErr
+    })
 
     // --- FINALIZE ERRORS ---
     const hasRowErrors =
-      rateRowErrors.length > 0 || otherDetailErrors.length > 0;
-    if (hasRowErrors) errors.tableRows = "Please fix table row errors.";
+      rateRowErrors.length > 0 || otherDetailErrors.length > 0
+    if (hasRowErrors) errors.tableRows = 'Please fix table row errors.'
 
     // Store structured error details (optional, for highlighting individual cells)
     setValidationErrors({
       ...errors,
       rateRowErrors,
       otherDetailErrors,
-    });
+    })
 
     // console.log(errors, rateRowErrors, otherDetailErrors);
-    return Object.keys(errors).length === 0 && !hasRowErrors;
-  };
+    return Object.keys(errors).length === 0 && !hasRowErrors
+  }
 
   const handleClientUpdate = async () => {
     if (validateStep1()) {
     } else {
-      alert("Please fix the validation errors.");
-      return;
+      alert('Please fix the validation errors.')
+      return
     }
     try {
-      const id = formData._id;
+      const id = formData._id
       // console.log(formData, id);
       await axios.put(
         `${API_URL}/api/clients/updateClient/${id}`,
         formData,
         getAuthHeaders(),
-      );
-      alert("Client updated successfully!");
-      onUpdate(id);
+      )
+      alert('Client updated successfully!')
+      onUpdate(id)
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
         alert(
           `Error: ${
-            error.response?.data?.message || "Failed to update client details."
+            error.response?.data?.message || 'Failed to update client details.'
           }`,
-        );
+        )
     }
-  };
+  }
 
   const handleClientBankUpdate = async () => {
     if (validateStep2()) {
     } else {
-      alert("Please fix the validation errors.");
-      return;
+      alert('Please fix the validation errors.')
+      return
     }
     try {
-      const id = formData._id;
+      const id = formData._id
       // console.log(formData, id);
       await axios.put(
         `${API_URL}/api/clients/updateClientBank/${id}`,
         formData,
         getAuthHeaders(),
-      );
-      alert("Bank Details updated successfully!");
-      onUpdate(id);
+      )
+      alert('Bank Details updated successfully!')
+      onUpdate(id)
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         // console.log(error);
         alert(
           `Error: ${
-            error.response?.data?.message || "Failed to update bank details."
+            error.response?.data?.message || 'Failed to update bank details.'
           }`,
-        );
+        )
       }
     }
-  };
+  }
 
   const addNewSite = async () => {
     if (validateStep3()) {
     } else {
-      alert("Please fix the validation errors.");
-      return;
+      alert('Please fix the validation errors.')
+      return
     }
 
     const sites = [
@@ -693,98 +692,98 @@ const ClientForm = ({
         otherDetails,
         rates: rateRows,
       },
-    ];
+    ]
     try {
-      const clientId = formData._id;
+      const clientId = formData._id
       // console.log(sites, clientId);
       await axios.post(
         `${API_URL}/api/clients/${clientId}/site`,
         sites,
         getAuthHeaders(),
-      );
-      alert("Sites added successfully!");
-      onUpdate(clientId);
+      )
+      alert('Sites added successfully!')
+      onUpdate(clientId)
       setSiteDetails({
-        siteName: "",
-        workOrderNo: "",
-        contactPersonName: "",
-        address: "",
-        billingAddress: "",
-        contactNo: "",
-        emailId: "",
-        city: "",
-        state: "",
-        country: "",
-        locationName: "",
-        locationStartDate: "",
-        salesPersonName: "",
-        salesPersonEmailId: "",
-        salesPersonContactNo: "",
-        billCycleDate: "",
-        status: "Active",
-        cgst: "",
-        sgst: "",
-        igst: "",
-        expectedBillingAmount: "",
-        daysForBilling: "",
+        siteName: '',
+        workOrderNo: '',
+        contactPersonName: '',
+        address: '',
+        billingAddress: '',
+        contactNo: '',
+        emailId: '',
+        city: '',
+        state: '',
+        country: '',
+        locationName: '',
+        locationStartDate: '',
+        salesPersonName: '',
+        salesPersonEmailId: '',
+        salesPersonContactNo: '',
+        billCycleDate: '',
+        status: 'Active',
+        cgst: '',
+        sgst: '',
+        igst: '',
+        expectedBillingAmount: '',
+        daysForBilling: '',
         viewOTHours: false,
         attachWagesSHeet: false,
         roundOffAmount: false,
         billWithoutRank: false,
-      });
+      })
       setRateRows([
         {
-          empType: "",
-          hours: "",
-          nos: "",
-          basic: "",
-          hra: "",
-          da: "",
-          specialAllowance: "",
-          otherAllowance: "",
-          lww: "",
-          bonus: "",
-          costPerHeadGross: "",
-          serviceChargesType: "",
-          serviceCharges: "",
-          perDayRate: "",
-          otRate: "",
-          leaveWages: "",
-          uniformWashing: "",
-          anyOther: "",
+          empType: '',
+          hours: '',
+          nos: '',
+          basic: '',
+          hra: '',
+          da: '',
+          specialAllowance: '',
+          otherAllowance: '',
+          lww: '',
+          bonus: '',
+          costPerHeadGross: '',
+          serviceChargesType: '',
+          serviceCharges: '',
+          perDayRate: '',
+          otRate: '',
+          leaveWages: '',
+          uniformWashing: '',
+          anyOther: '',
         },
-      ]);
+      ])
       setOtherDetails([
         {
-          typeOfServ: "",
-          chargesType: "",
-          charges: "",
-          calcOn: "",
-          calcOperation: "",
-          amountToCompare: "",
+          typeOfServ: '',
+          chargesType: '',
+          charges: '',
+          calcOn: '',
+          calcOperation: '',
+          amountToCompare: '',
         },
-      ]);
-      setValidationErrors({});
+      ])
+      setValidationErrors({})
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         // console.log(error);
         alert(
           `Error: ${
-            error.response?.data?.message || "Failed to update bank details."
+            error.response?.data?.message || 'Failed to update bank details.'
           }`,
-        );
+        )
       }
     }
-  };
+  }
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (step === 3 && !validateStep3()) {
-      alert("Please fix the validation errors.");
-      return;
+      alert('Please fix the validation errors.')
+      return
     }
     // console.log(validationErrors);
     onSave({
@@ -796,8 +795,8 @@ const ClientForm = ({
           rates: rateRows,
         },
       ],
-    });
-  };
+    })
+  }
 
   const renderRateRows = () =>
     rateRows.map((row, idx) => (
@@ -806,9 +805,9 @@ const ClientForm = ({
           <Form.Select
             value={row.empType}
             name={`empType_${idx}`}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "empType", e.target.value)
+              handleRateRowChange(idx, 'empType', e.target.value)
             }
           >
             <option value="">Select Employee Type</option>
@@ -822,8 +821,8 @@ const ClientForm = ({
         <td>
           <Form.Select
             value={row.hours}
-            style={{ width: "auto" }}
-            onChange={(e) => handleRateRowChange(idx, "hours", e.target.value)}
+            style={{ width: 'auto' }}
+            onChange={(e) => handleRateRowChange(idx, 'hours', e.target.value)}
           >
             <option value="">Select Hours</option>
             <option value="8">8</option>
@@ -834,42 +833,42 @@ const ClientForm = ({
         <td>
           <Form.Control
             type="number"
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             value={row.nos}
-            onChange={(e) => handleRateRowChange(idx, "nos", e.target.value)}
+            onChange={(e) => handleRateRowChange(idx, 'nos', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
             value={row.basic}
-            style={{ width: "auto" }}
-            onChange={(e) => handleRateRowChange(idx, "basic", e.target.value)}
+            style={{ width: 'auto' }}
+            onChange={(e) => handleRateRowChange(idx, 'basic', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
             value={row.hra}
-            style={{ width: "auto" }}
-            onChange={(e) => handleRateRowChange(idx, "hra", e.target.value)}
+            style={{ width: 'auto' }}
+            onChange={(e) => handleRateRowChange(idx, 'hra', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
             value={row.da}
-            style={{ width: "auto" }}
-            onChange={(e) => handleRateRowChange(idx, "da", e.target.value)}
+            style={{ width: 'auto' }}
+            onChange={(e) => handleRateRowChange(idx, 'da', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
             value={row.specialAllowance}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "specialAllowance", e.target.value)
+              handleRateRowChange(idx, 'specialAllowance', e.target.value)
             }
           />
         </td>
@@ -877,9 +876,9 @@ const ClientForm = ({
           <Form.Control
             type="number"
             value={row.otherAllowance}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "otherAllowance", e.target.value)
+              handleRateRowChange(idx, 'otherAllowance', e.target.value)
             }
           />
         </td>
@@ -887,34 +886,34 @@ const ClientForm = ({
           <Form.Control
             type="number"
             value={row.lww}
-            style={{ width: "auto" }}
-            onChange={(e) => handleRateRowChange(idx, "lww", e.target.value)}
+            style={{ width: 'auto' }}
+            onChange={(e) => handleRateRowChange(idx, 'lww', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             value={row.bonus}
-            onChange={(e) => handleRateRowChange(idx, "bonus", e.target.value)}
+            onChange={(e) => handleRateRowChange(idx, 'bonus', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
             value={row.costPerHeadGross}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "costPerHeadGross", e.target.value)
+              handleRateRowChange(idx, 'costPerHeadGross', e.target.value)
             }
           />
         </td>
         <td>
           <Form.Select
             value={row.serviceChargesType}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "serviceChargesType", e.target.value)
+              handleRateRowChange(idx, 'serviceChargesType', e.target.value)
             }
           >
             <option value="">Select</option>
@@ -926,9 +925,9 @@ const ClientForm = ({
           <Form.Control
             type="number"
             value={row.serviceCharges}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "serviceCharges", e.target.value)
+              handleRateRowChange(idx, 'serviceCharges', e.target.value)
             }
           />
         </td>
@@ -936,47 +935,47 @@ const ClientForm = ({
           <Form.Control
             type="number"
             value={row.perDayRate}
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             onChange={(e) =>
-              handleRateRowChange(idx, "perDayRate", e.target.value)
+              handleRateRowChange(idx, 'perDayRate', e.target.value)
             }
           />
         </td>
         <td>
           <Form.Control
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             type="number"
             value={row.otRate}
-            onChange={(e) => handleRateRowChange(idx, "otRate", e.target.value)}
+            onChange={(e) => handleRateRowChange(idx, 'otRate', e.target.value)}
           />
         </td>
         <td>
           <Form.Control
             type="number"
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             value={row.leaveWages}
             onChange={(e) =>
-              handleRateRowChange(idx, "leaveWages", e.target.value)
+              handleRateRowChange(idx, 'leaveWages', e.target.value)
             }
           />
         </td>
         <td>
           <Form.Control
             type="number"
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             value={row.uniformWashing}
             onChange={(e) =>
-              handleRateRowChange(idx, "uniformWashing", e.target.value)
+              handleRateRowChange(idx, 'uniformWashing', e.target.value)
             }
           />
         </td>
         <td>
           <Form.Control
             type="number"
-            style={{ width: "auto" }}
+            style={{ width: 'auto' }}
             value={row.anyOther}
             onChange={(e) =>
-              handleRateRowChange(idx, "anyOther", e.target.value)
+              handleRateRowChange(idx, 'anyOther', e.target.value)
             }
           />
         </td>
@@ -1003,7 +1002,7 @@ const ClientForm = ({
           </div>
         </td>
       </tr>
-    ));
+    ))
 
   const renderStepContent = () => {
     switch (step) {
@@ -1021,7 +1020,7 @@ const ClientForm = ({
                   <Form.Label>Company Name *</Form.Label>
                   <Form.Control
                     name="companyName"
-                    value={formData.companyName || ""}
+                    value={formData.companyName || ''}
                     onChange={handleChange}
                     placeholder="Company Name"
                     isInvalid={!!validationErrors.companyName}
@@ -1036,7 +1035,7 @@ const ClientForm = ({
                   <Form.Label>Contact No</Form.Label>
                   <Form.Control
                     name="contactNo"
-                    value={formData.contactNo || ""}
+                    value={formData.contactNo || ''}
                     onChange={handleChange}
                     placeholder="Contact No"
                     isInvalid={!!validationErrors.contactNo}
@@ -1052,7 +1051,7 @@ const ClientForm = ({
                   <Form.Control
                     name="emailId"
                     type="email"
-                    value={formData.emailId || ""}
+                    value={formData.emailId || ''}
                     onChange={handleChange}
                     placeholder="Email ID"
                     isInvalid={!!validationErrors.emailId}
@@ -1067,7 +1066,7 @@ const ClientForm = ({
                   <Form.Label>Contact Person Name *</Form.Label>
                   <Form.Control
                     name="contactPersonName"
-                    value={formData.contactPersonName || ""}
+                    value={formData.contactPersonName || ''}
                     onChange={handleChange}
                     placeholder="Contact Person Name"
                     isInvalid={!!validationErrors.contactPersonName}
@@ -1081,9 +1080,9 @@ const ClientForm = ({
                 <Form.Group controlId="address">
                   <Form.Label>Address</Form.Label>
                   <Form.Control
-                    as={"textarea"}
+                    as={'textarea'}
                     name="address"
-                    value={formData.address || ""}
+                    value={formData.address || ''}
                     onChange={handleChange}
                     placeholder="Address"
                     rows={3}
@@ -1095,7 +1094,7 @@ const ClientForm = ({
                   <Form.Label>City</Form.Label>
                   <Form.Control
                     name="city"
-                    value={formData.city || ""}
+                    value={formData.city || ''}
                     onChange={handleChange}
                     placeholder="City"
                   />
@@ -1106,7 +1105,7 @@ const ClientForm = ({
                   <Form.Label>State</Form.Label>
                   <Form.Control
                     name="state"
-                    value={formData.state || ""}
+                    value={formData.state || ''}
                     onChange={handleChange}
                     placeholder="State"
                   />
@@ -1117,7 +1116,7 @@ const ClientForm = ({
                   <Form.Label>Pincode</Form.Label>
                   <Form.Control
                     name="pincode"
-                    value={formData.pincode || ""}
+                    value={formData.pincode || ''}
                     onChange={handleChange}
                     placeholder="Pincode"
                     isInvalid={!!validationErrors.pincode}
@@ -1132,7 +1131,7 @@ const ClientForm = ({
                   <Form.Label>GST State Code</Form.Label>
                   <Form.Control
                     name="gstStateCode"
-                    value={formData.gstStateCode || ""}
+                    value={formData.gstStateCode || ''}
                     onChange={handleChange}
                     placeholder="GST State Code"
                     isInvalid={!!validationErrors.gstStateCode}
@@ -1147,7 +1146,7 @@ const ClientForm = ({
                   <Form.Label>GST No</Form.Label>
                   <Form.Control
                     name="gstNo"
-                    value={formData.gstNo || ""}
+                    value={formData.gstNo || ''}
                     onChange={handleChange}
                     placeholder="GST No"
                     isInvalid={!!validationErrors.gstNo}
@@ -1162,7 +1161,7 @@ const ClientForm = ({
                   <Form.Label>SAC Code</Form.Label>
                   <Form.Control
                     name="sacCode"
-                    value={formData.sacCode || ""}
+                    value={formData.sacCode || ''}
                     onChange={handleChange}
                     placeholder="SAC Code"
                     isInvalid={!!validationErrors.sacCode}
@@ -1181,35 +1180,35 @@ const ClientForm = ({
                     value={
                       formData.billingCompany?._id ||
                       formData.billingCompany ||
-                      ""
+                      ''
                     }
                     onChange={(e) => {
-                      const selectedId = e.target.value;
+                      const selectedId = e.target.value
 
                       // find the selected company in the companies array
                       const selectedCompany = companies.find(
                         (c) => c._id === selectedId,
-                      );
+                      )
 
                       // update form data and bank list
                       setFormData((prev) => ({
                         ...prev,
                         billingCompany: selectedId,
-                        companyBankName: "", // reset any previously selected bank
-                      }));
+                        companyBankName: '', // reset any previously selected bank
+                      }))
 
                       // set banks if company has any
                       if (selectedCompany && selectedCompany.bankDetails) {
-                        setBillingCompanyBanks(selectedCompany.bankDetails);
+                        setBillingCompanyBanks(selectedCompany.bankDetails)
                       } else {
-                        setBillingCompanyBanks([]);
+                        setBillingCompanyBanks([])
                       }
                     }}
                   >
                     <option value="">Select Billing Company</option>
                     {companies.map((company) => (
-                      <option key={company._id} value={company._id}>
-                        {company.companyName}
+                      <option key={company.id} value={company.id}>
+                        {company.company_name}
                       </option>
                     ))}
                   </Form.Select>
@@ -1221,9 +1220,9 @@ const ClientForm = ({
                   <Form.Select
                     name="companyBankName"
                     value={
-                      formData.companyBankName?._id ||
+                      formData.companyBankName?.id ||
                       formData.companyBankName ||
-                      ""
+                      ''
                     }
                     onChange={handleChange}
                     disabled={billingCompanyBanks.length === 0}
@@ -1245,7 +1244,7 @@ const ClientForm = ({
                   <Form.Control
                     as="textarea"
                     name="otherInfo"
-                    value={formData.otherInfo || ""}
+                    value={formData.otherInfo || ''}
                     onChange={handleChange}
                     placeholder="Other Info"
                     rows={3}
@@ -1258,7 +1257,7 @@ const ClientForm = ({
                   <Form.Control
                     as="textarea"
                     name="termsAndConditions"
-                    value={formData.termsAndConditions || ""}
+                    value={formData.termsAndConditions || ''}
                     onChange={handleChange}
                     placeholder="Terms & Conditions"
                     rows={3}
@@ -1267,7 +1266,7 @@ const ClientForm = ({
               </Col>
             </Row>
           </div>
-        );
+        )
 
       case 2: // Bank Details
         return (
@@ -1283,7 +1282,7 @@ const ClientForm = ({
                   <Form.Label>Bank Name *</Form.Label>
                   <Form.Control
                     name="bankName"
-                    value={formData.bankName || ""}
+                    value={formData.bankName || ''}
                     onChange={handleChange}
                     placeholder="Bank Name"
                     isInvalid={!!validationErrors.bankName}
@@ -1298,7 +1297,7 @@ const ClientForm = ({
                   <Form.Label>Account No *</Form.Label>
                   <Form.Control
                     name="accountNo"
-                    value={formData.accountNo || ""}
+                    value={formData.accountNo || ''}
                     onChange={handleChange}
                     placeholder="Account No"
                     isInvalid={!!validationErrors.accountNo}
@@ -1313,7 +1312,7 @@ const ClientForm = ({
                   <Form.Label>IFSC Code *</Form.Label>
                   <Form.Control
                     name="ifscCode"
-                    value={formData.ifscCode || ""}
+                    value={formData.ifscCode || ''}
                     onChange={handleChange}
                     placeholder="IFSC Code"
                     isInvalid={!!validationErrors.ifscCode}
@@ -1328,7 +1327,7 @@ const ClientForm = ({
                   <Form.Label>Branch</Form.Label>
                   <Form.Control
                     name="branch"
-                    value={formData.branch || ""}
+                    value={formData.branch || ''}
                     onChange={handleChange}
                     placeholder="Branch"
                   />
@@ -1339,7 +1338,7 @@ const ClientForm = ({
                   <Form.Label>Bank City</Form.Label>
                   <Form.Control
                     name="bankCity"
-                    value={formData.bankCity || ""}
+                    value={formData.bankCity || ''}
                     onChange={handleChange}
                     placeholder="City"
                   />
@@ -1350,7 +1349,7 @@ const ClientForm = ({
                   <Form.Label>MICR Code</Form.Label>
                   <Form.Control
                     name="micrCode"
-                    value={formData.micrCode || ""}
+                    value={formData.micrCode || ''}
                     onChange={handleChange}
                     placeholder="MICR Code"
                     isInvalid={!!validationErrors.micrCode}
@@ -1362,7 +1361,7 @@ const ClientForm = ({
               </Col>
             </Row>
           </div>
-        );
+        )
 
       case 3: // Rates & Sites
         return (
@@ -1396,7 +1395,7 @@ const ClientForm = ({
                   <Form.Label>Site Name *</Form.Label>
                   <Form.Control
                     name="siteName"
-                    value={siteDetails.siteName || ""}
+                    value={siteDetails.siteName || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Site Name"
                     isInvalid={!!validationErrors.siteName}
@@ -1411,7 +1410,7 @@ const ClientForm = ({
                   <Form.Label>Work Order No</Form.Label>
                   <Form.Control
                     name="workOrderNo"
-                    value={siteDetails.workOrderNo || ""}
+                    value={siteDetails.workOrderNo || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Work Order No"
                   />
@@ -1422,7 +1421,7 @@ const ClientForm = ({
                   <Form.Label>Contact Person Name</Form.Label>
                   <Form.Control
                     name="contactPersonName"
-                    value={siteDetails.contactPersonName || ""}
+                    value={siteDetails.contactPersonName || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Contact Person Name"
                   />
@@ -1433,8 +1432,8 @@ const ClientForm = ({
                   <Form.Label>Address</Form.Label>
                   <Form.Control
                     name="address"
-                    as={"textarea"}
-                    value={siteDetails.address || ""}
+                    as={'textarea'}
+                    value={siteDetails.address || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Address"
                     rows={3}
@@ -1446,8 +1445,8 @@ const ClientForm = ({
                   <Form.Label>Billing Address</Form.Label>
                   <Form.Control
                     name="billingAddress"
-                    as={"textarea"}
-                    value={siteDetails.billingAddress || ""}
+                    as={'textarea'}
+                    value={siteDetails.billingAddress || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Billing Address"
                     rows={3}
@@ -1459,7 +1458,7 @@ const ClientForm = ({
                   <Form.Label>Contact No</Form.Label>
                   <Form.Control
                     name="contactNo"
-                    value={siteDetails.contactNo || ""}
+                    value={siteDetails.contactNo || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Contact No"
                     isInvalid={!!validationErrors.contactNo}
@@ -1475,7 +1474,7 @@ const ClientForm = ({
                   <Form.Control
                     name="emailId"
                     type="email"
-                    value={siteDetails.emailId || ""}
+                    value={siteDetails.emailId || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Email ID"
                     isInvalid={!!validationErrors.emailId}
@@ -1490,7 +1489,7 @@ const ClientForm = ({
                   <Form.Label>City</Form.Label>
                   <Form.Control
                     name="city"
-                    value={siteDetails.city || ""}
+                    value={siteDetails.city || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="City"
                   />
@@ -1501,7 +1500,7 @@ const ClientForm = ({
                   <Form.Label>State</Form.Label>
                   <Form.Control
                     name="state"
-                    value={siteDetails.state || ""}
+                    value={siteDetails.state || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="State"
                   />
@@ -1512,7 +1511,7 @@ const ClientForm = ({
                   <Form.Label>Country</Form.Label>
                   <Form.Control
                     name="country"
-                    value={siteDetails.country || ""}
+                    value={siteDetails.country || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Country"
                   />
@@ -1523,7 +1522,7 @@ const ClientForm = ({
                   <Form.Label>Location Name</Form.Label>
                   <Form.Control
                     name="locationName"
-                    value={siteDetails.locationName || ""}
+                    value={siteDetails.locationName || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Location Name"
                   />
@@ -1535,7 +1534,7 @@ const ClientForm = ({
                   <Form.Control
                     name="locationStartDate"
                     type="date"
-                    value={siteDetails.locationStartDate || ""}
+                    value={siteDetails.locationStartDate || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Location Start Date"
                   />
@@ -1546,7 +1545,7 @@ const ClientForm = ({
                   <Form.Label>Sales Person Name</Form.Label>
                   <Form.Control
                     name="salesPersonName"
-                    value={siteDetails.salesPersonName || ""}
+                    value={siteDetails.salesPersonName || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Sales Person Name"
                   />
@@ -1558,7 +1557,7 @@ const ClientForm = ({
                   <Form.Control
                     name="salesPersonEmailId"
                     type="email"
-                    value={siteDetails.salesPersonEmailId || ""}
+                    value={siteDetails.salesPersonEmailId || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Sales Person Email ID"
                     isInvalid={!!validationErrors.salesPersonEmailId}
@@ -1573,7 +1572,7 @@ const ClientForm = ({
                   <Form.Label>Sales Person Contact No</Form.Label>
                   <Form.Control
                     name="salesPersonContactNo"
-                    value={siteDetails.salesPersonContactNo || ""}
+                    value={siteDetails.salesPersonContactNo || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Sales Person Contact No"
                     isInvalid={!!validationErrors.salesPersonContactNo}
@@ -1588,7 +1587,7 @@ const ClientForm = ({
                   <Form.Label>Bill Cycle Date</Form.Label>
                   <Form.Select
                     name="billCycleDate"
-                    value={siteDetails.billCycleDate || ""}
+                    value={siteDetails.billCycleDate || ''}
                     onChange={handleSiteDetailChange}
                   >
                     <option value="">Select Bill Cycle Date</option>
@@ -1602,7 +1601,7 @@ const ClientForm = ({
                   <Form.Label>Status</Form.Label>
                   <Form.Select
                     name="status"
-                    value={siteDetails.status || ""}
+                    value={siteDetails.status || ''}
                     onChange={handleSiteDetailChange}
                   >
                     <option value="Active">Active</option>
@@ -1615,7 +1614,7 @@ const ClientForm = ({
                   <Form.Label>CGST (%)</Form.Label>
                   <Form.Control
                     name="cgst"
-                    value={siteDetails.cgst || ""}
+                    value={siteDetails.cgst || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="CGST (%)"
                     isInvalid={!!validationErrors.cgst}
@@ -1630,7 +1629,7 @@ const ClientForm = ({
                   <Form.Label>SGST (%)</Form.Label>
                   <Form.Control
                     name="sgst"
-                    value={siteDetails.sgst || ""}
+                    value={siteDetails.sgst || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="SGST (%)"
                     isInvalid={!!validationErrors.sgst}
@@ -1645,7 +1644,7 @@ const ClientForm = ({
                   <Form.Label>IGST (%)</Form.Label>
                   <Form.Control
                     name="igst"
-                    value={siteDetails.igst || ""}
+                    value={siteDetails.igst || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="IGST (%)"
                     isInvalid={!!validationErrors.igst}
@@ -1660,7 +1659,7 @@ const ClientForm = ({
                   <Form.Label>Expected Billing Amount</Form.Label>
                   <Form.Control
                     name="expectedBillingAmount"
-                    value={siteDetails.expectedBillingAmount || ""}
+                    value={siteDetails.expectedBillingAmount || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Expected Billing Amount"
                     isInvalid={!!validationErrors.expectedBillingAmount}
@@ -1675,7 +1674,7 @@ const ClientForm = ({
                   <Form.Label>Total No Of Days For Billing</Form.Label>
                   <Form.Control
                     name="daysForBilling"
-                    value={siteDetails.daysForBilling || ""}
+                    value={siteDetails.daysForBilling || ''}
                     onChange={handleSiteDetailChange}
                     placeholder="Total No Of Days For Billing"
                     isInvalid={!!validationErrors.daysForBilling}
@@ -1695,15 +1694,15 @@ const ClientForm = ({
                     checked={!!siteDetails.viewOTHours}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "viewOTHours",
-                            type: "checkbox",
+                            name: 'viewOTHours',
+                            type: 'checkbox',
                             checked: !siteDetails.viewOTHours,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1718,15 +1717,15 @@ const ClientForm = ({
                     checked={!!siteDetails.attachWagesSHeet}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "attachWagesSHeet",
-                            type: "checkbox",
+                            name: 'attachWagesSHeet',
+                            type: 'checkbox',
                             checked: !siteDetails.attachWagesSHeet,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1741,15 +1740,15 @@ const ClientForm = ({
                     checked={!!siteDetails.roundOffAmount}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "roundOffAmount",
-                            type: "checkbox",
+                            name: 'roundOffAmount',
+                            type: 'checkbox',
                             checked: !siteDetails.roundOffAmount,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1764,15 +1763,15 @@ const ClientForm = ({
                     checked={!!siteDetails.billWithoutRank}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "billWithoutRank",
-                            type: "checkbox",
+                            name: 'billWithoutRank',
+                            type: 'checkbox',
                             checked: !siteDetails.billWithoutRank,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1786,15 +1785,15 @@ const ClientForm = ({
                     checked={!!siteDetails.nonComplianceSite}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "nonComplianceSite",
-                            type: "checkbox",
+                            name: 'nonComplianceSite',
+                            type: 'checkbox',
                             checked: !siteDetails.nonComplianceSite,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1808,15 +1807,15 @@ const ClientForm = ({
                     checked={!!siteDetails.applyLeave}
                     onChange={handleSiteDetailChange}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
                         handleSiteDetailChange({
                           target: {
-                            name: "applyLeave",
-                            type: "checkbox",
+                            name: 'applyLeave',
+                            type: 'checkbox',
                             checked: !siteDetails.applyLeave,
                           },
-                        });
+                        })
                       }
                     }}
                   />
@@ -1858,13 +1857,13 @@ const ClientForm = ({
               type="button"
               className="btn-primary"
               onClick={() => {
-                setShowOtherModal(true);
+                setShowOtherModal(true)
               }}
             >
               Click To Other Info
             </button>
           </div>
-        );
+        )
 
       case 4:
         return (
@@ -1884,27 +1883,27 @@ const ClientForm = ({
                   clientSites.map((r, idx) => (
                     <tr key={idx}>
                       <td>
-                        Site: {r.siteName || ""} <br />
-                        Client Code: {r.clientCode || ""} <br />
-                        Name: {r.contactPersonName || ""} <br />
-                        Address: {r.address || ""} <br />
+                        Site: {r.siteName || ''} <br />
+                        Client Code: {r.clientCode || ''} <br />
+                        Name: {r.contactPersonName || ''} <br />
+                        Address: {r.address || ''} <br />
                       </td>
                       <td>
-                        Name: {r.salesPersonName || ""} <br />
-                        Contact No: {r.salesPersonContactNo || ""} <br />
-                        Email Id: {r.salesPersonEmailId || ""} <br />
+                        Name: {r.salesPersonName || ''} <br />
+                        Contact No: {r.salesPersonContactNo || ''} <br />
+                        Email Id: {r.salesPersonEmailId || ''} <br />
                       </td>
                       <td>
-                        Bill Cycle Date: {r.billCycleDate || ""} <br />
-                        Status: {r.status || ""} <br />
-                        Expected Date: {""} <br />
+                        Bill Cycle Date: {r.billCycleDate || ''} <br />
+                        Status: {r.status || ''} <br />
+                        Expected Date: {''} <br />
                       </td>
                       <td>
                         {r.rates.length > 0
                           ? r.rates.map((ra, i) =>
-                              ra.empType !== "" ? (
+                              ra.empType !== '' ? (
                                 <span key={i}>
-                                  {ra.empType} ({ra.hours} hours): * Rs{" "}
+                                  {ra.empType} ({ra.hours} hours): * Rs{' '}
                                   {ra.perDayRate} Per Day | <br />
                                 </span>
                               ) : null,
@@ -1915,22 +1914,22 @@ const ClientForm = ({
                         !!r.otherDetails[0].typeOfServ ? (
                           <hr />
                         ) : (
-                          ""
+                          ''
                         )}
                         {r.otherDetails.length > 0
                           ? r.otherDetails.map((o, i) => (
                               <span key={i}>
                                 {o.typeOfServ
                                   ? o.typeOfServ +
-                                    ":" +
+                                    ':' +
                                     o.charges +
-                                    " " +
+                                    ' ' +
                                     o.chargesType +
-                                    " | "
-                                  : " "}
+                                    ' | '
+                                  : ' '}
                               </span>
                             ))
-                          : ""}
+                          : ''}
                       </td>
                       <td>
                         <div className="table-actions align-items-center">
@@ -1938,7 +1937,7 @@ const ClientForm = ({
                             className="icon-btn edit"
                             type="button"
                             onClick={() => {
-                              editSite(r);
+                              editSite(r)
                             }}
                             title="Edit Site"
                           >
@@ -1948,7 +1947,7 @@ const ClientForm = ({
                             type="button"
                             className="icon-btn delete"
                             onClick={() => {
-                              deleteSite(r._id, r.clientId);
+                              deleteSite(r._id, r.clientId)
                             }}
                             title="Delete Site"
                           >
@@ -1959,7 +1958,7 @@ const ClientForm = ({
                             className="tb-action-btn update"
                             title="WO Rate Chart"
                             onClick={() => {
-                              woRateChart(r);
+                              woRateChart(r)
                             }}
                           >
                             WO Rate Chart
@@ -1968,7 +1967,7 @@ const ClientForm = ({
                             type="button"
                             className="tb-action-btn change"
                             onClick={() => {
-                              wagesSettings(r);
+                              wagesSettings(r)
                             }}
                             title="Wages Setting"
                           >
@@ -1986,11 +1985,11 @@ const ClientForm = ({
               </tbody>
             </Table>
           </div>
-        );
+        )
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <>
@@ -2000,26 +1999,26 @@ const ClientForm = ({
             {clientToEdit ? (
               <span>Edit Client - {clientToEdit.companyName}</span>
             ) : (
-              "Add New Client"
+              'Add New Client'
             )}
           </h2>
           <div className="step-indicator">
-            <div className={`step ${step >= 1 ? "active" : ""}`}>
+            <div className={`step ${step >= 1 ? 'active' : ''}`}>
               <span>1</span> Client Details
             </div>
-            <div className={`step ${step >= 2 ? "active" : ""}`}>
+            <div className={`step ${step >= 2 ? 'active' : ''}`}>
               <span>2</span> Bank Details
             </div>
-            <div className={`step ${step >= 3 ? "active" : ""}`}>
-              <span>3</span>{" "}
-              {clientToEdit ? "New Rates & Site" : "Rates & Site"}
+            <div className={`step ${step >= 3 ? 'active' : ''}`}>
+              <span>3</span>{' '}
+              {clientToEdit ? 'New Rates & Site' : 'Rates & Site'}
             </div>
             {clientToEdit ? (
-              <div className={`step ${step >= 4 ? "active" : ""}`}>
+              <div className={`step ${step >= 4 ? 'active' : ''}`}>
                 <span>4</span> Added Rates
               </div>
             ) : (
-              ""
+              ''
             )}
           </div>
           {error ? (
@@ -2027,7 +2026,7 @@ const ClientForm = ({
               {error}
             </Alert>
           ) : (
-            ""
+            ''
           )}
           <Form onSubmit={handleSubmit} className="multi-step-form">
             <div className="form-content">{renderStepContent()}</div>
@@ -2089,15 +2088,15 @@ const ClientForm = ({
                   onClick={() => {
                     if (step === 1) {
                       if (validateStep1()) {
-                        setStep(step + 1);
+                        setStep(step + 1)
                       } else {
-                        alert("Please fix the validation errors.");
+                        alert('Please fix the validation errors.')
                       }
                     } else if (step === 2) {
                       if (validateStep2()) {
-                        setStep(step + 1);
+                        setStep(step + 1)
                       } else {
-                        alert("Please fix the validation errors.");
+                        alert('Please fix the validation errors.')
                       }
                     }
                   }}
@@ -2111,7 +2110,7 @@ const ClientForm = ({
                     variant="primary"
                     type="button"
                     onClick={() => {
-                      setStep(step + 1);
+                      setStep(step + 1)
                     }}
                   >
                     Next
@@ -2162,12 +2161,12 @@ const ClientForm = ({
                 <tr key={idx}>
                   <td>
                     <Form.Select
-                      style={{ width: "auto" }}
-                      value={row.typeOfServ ?? ""}
+                      style={{ width: 'auto' }}
+                      value={row.typeOfServ ?? ''}
                       onChange={(e) =>
                         handleOtherDetailChange(
                           idx,
-                          "typeOfServ",
+                          'typeOfServ',
                           e.target.value,
                         )
                       }
@@ -2183,12 +2182,12 @@ const ClientForm = ({
                   <td>
                     <Form.Select
                       type="text"
-                      style={{ width: "auto" }}
+                      style={{ width: 'auto' }}
                       value={row.chargesType}
                       onChange={(e) =>
                         handleOtherDetailChange(
                           idx,
-                          "chargesType",
+                          'chargesType',
                           e.target.value,
                         )
                       }
@@ -2201,21 +2200,21 @@ const ClientForm = ({
                   <td>
                     <Form.Control
                       type="number"
-                      style={{ width: "auto" }}
+                      style={{ width: 'auto' }}
                       value={row.charges}
                       onChange={(e) =>
-                        handleOtherDetailChange(idx, "charges", e.target.value)
+                        handleOtherDetailChange(idx, 'charges', e.target.value)
                       }
                     />
                   </td>
                   <td>
                     <Form.Select
-                      style={{ width: "auto" }}
+                      style={{ width: 'auto' }}
                       className="form-control"
                       name="calcOn"
                       value={row.calcOn}
                       onChange={(e) =>
-                        handleOtherDetailChange(idx, "calcOn", e.target.value)
+                        handleOtherDetailChange(idx, 'calcOn', e.target.value)
                       }
                     >
                       <option value="">Select</option>
@@ -2251,12 +2250,12 @@ const ClientForm = ({
                   </td>
                   <td>
                     <Form.Select
-                      style={{ width: "auto" }}
+                      style={{ width: 'auto' }}
                       value={row.calcOperation}
                       onChange={(e) =>
                         handleOtherDetailChange(
                           idx,
-                          "calcOperation",
+                          'calcOperation',
                           e.target.value,
                         )
                       }
@@ -2277,12 +2276,12 @@ const ClientForm = ({
                   <td>
                     <Form.Control
                       type="text"
-                      style={{ width: "auto" }}
+                      style={{ width: 'auto' }}
                       value={row.amountToCompare}
                       onChange={(e) =>
                         handleOtherDetailChange(
                           idx,
-                          "amountToCompare",
+                          'amountToCompare',
                           e.target.value,
                         )
                       }
@@ -2337,7 +2336,7 @@ const ClientForm = ({
         </Modal.Footer>
       </Modal>
     </>
-  );
-};
+  )
+}
 
-export default ClientForm;
+export default ClientForm
