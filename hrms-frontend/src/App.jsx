@@ -85,7 +85,7 @@ export default function App() {
           <Route path="/add-new/client" element={<ClientPage />} />
           <Route path="/add-new/holidays" element={<Holiday />} />
           <Route
-            path="/add-new/salary-templates"
+            path="/add-new/salary-template"
             element={<SalaryTemplatePage />}
           />
           <Route path="/add-new/charges-type" element={<ChargesMasterPage />} />
@@ -115,10 +115,10 @@ export default function App() {
           />
 
           <Route
-            path="/employee/employee-types"
+            path="/employee/employee-type"
             element={<EmployeeTypePage />}
           />
-          <Route path="/employee/employees" element={<EmployeePages />} />
+          <Route path="/employee/employee" element={<EmployeePages />} />
           <Route path="/employees/add" element={<AddEmployee />} />
           <Route
             path="/attendance/attendance-by-employee"

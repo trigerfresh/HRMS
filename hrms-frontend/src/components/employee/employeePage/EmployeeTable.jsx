@@ -1,5 +1,5 @@
-import React from "react";
-import { Alert, Table } from "react-bootstrap";
+import React from 'react'
+import { Alert, Table } from 'react-bootstrap'
 
 const EmployeeTable = ({
   loading,
@@ -42,35 +42,33 @@ const EmployeeTable = ({
               </tr>
             ) : (
               employees.map((emp, index) => (
-                <tr key={emp._id}>
+                <tr key={emp.id}>
                   <td>{index + 1}</td> {/* Sr No. */}
                   <td>
-                    Code: {emp.employeeCode} <br />
-                    {emp.initial} {emp.firstName} {emp.lastName} <br />
-                    {emp.uanNo && `UAN No: ${emp.uanNo}`} <br />
+                    Code: {emp.employee_code} <br />
+                    {emp.initial} {emp.first_name} {emp.last_name} <br />
+                    {emp.uan_no && `UAN No: ${emp.uan_no}`} <br />
                     {emp.esisNo && `ESIS No: ${emp.esisNo}`}
                   </td>
-                  <td>{emp.designation}</td>
-                  <td>{emp.client?.companyName || "N/A"}</td>
+                  <td>{emp.rank}</td>
+                  <td>{emp.company_name || 'N/A'}</td>
                   <td>
-                    {emp.location?.clientCode
-                      ? "Client Code: " + emp.location?.clientCode
-                      : "N/A"}
+                    {emp.client_id ? 'Client Code: ' + emp.client_id : 'N/A'}
                     <br />
-                    {emp.location?.siteName
-                      ? "Site Name: " + emp.location?.siteName
-                      : "N/A"}
+                    {emp.site_name ? 'Site Name: ' + emp.site_name : 'N/A'}
                   </td>
                   <td>
                     {emp.created_by?.name} <br />
-                    {new Date(emp.created_on).toLocaleDateString("en-GB")}
+                    {new Date(emp.created_on).toLocaleDateString('en-GB')}
                   </td>
-                  <td className="salary-detail">Rs.{emp.salary || "0"}</td>
+                  <td className="salary-detail">
+                    Rs.{emp.basic_salary || '0'}
+                  </td>
                   <td>
                     <span
-                      className={`status-badge status-${emp.status.toLowerCase()}`}
+                      className={`status-badge status-${emp?.status?.toLowerCase()}`}
                     >
-                      {emp.status}
+                      {emp?.em_status}
                     </span>
                   </td>
                   <td>
@@ -83,7 +81,7 @@ const EmployeeTable = ({
                       </button>
                       <button
                         className="tb-action-btn update"
-                        onClick={() => onUpdateSalary(emp._id)}
+                        onClick={() => onUpdateSalary(emp.id)}
                       >
                         Update Salary
                       </button>
@@ -95,7 +93,7 @@ const EmployeeTable = ({
                       </button>
                       <button
                         className="tb-action-btn delete"
-                        onClick={() => onDelete(emp._id)}
+                        onClick={() => onDelete(emp.id)}
                       >
                         Delete
                       </button>
@@ -108,7 +106,7 @@ const EmployeeTable = ({
         </Table>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default EmployeeTable;
+export default EmployeeTable

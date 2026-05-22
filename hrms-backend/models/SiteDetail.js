@@ -1,9 +1,9 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 const SiteDetailSchema = new mongoose.Schema({
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Client",
+    ref: 'Client',
   },
   siteName: { type: String },
   workOrderNo: { type: String },
@@ -22,7 +22,7 @@ const SiteDetailSchema = new mongoose.Schema({
   salesPersonEmailId: { type: String },
   salesPersonContactNo: { type: String },
   billCycleDate: { type: String },
-  status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
+  status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   cgst: { type: Number },
   sgst: { type: Number },
   igst: { type: Number },
@@ -129,20 +129,20 @@ const SiteDetailSchema = new mongoose.Schema({
   active: { type: Number, default: 0 },
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true,
   },
   created_on: { type: Date, default: Date.now },
   modified_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
   },
   modified_on: { type: Date },
   disabled_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
   },
   disabled_on: { type: Date },
-});
+})
 
-module.exports = mongoose.model("SiteDetail", SiteDetailSchema);
+module.exports = mongoose.model('SiteDetail', SiteDetailSchema)

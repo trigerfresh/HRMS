@@ -1,201 +1,199 @@
 // src/pages/EmployeeTypePage.jsx
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
 
-import FilterPanel from "../../utils/FilterPanel";
-import { FaPen, FaSearch, FaTrashAlt } from "react-icons/fa";
-import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+import FilterPanel from '../../utils/FilterPanel'
+import { FaPen, FaSearch, FaTrashAlt } from 'react-icons/fa'
+import { Alert, Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function EmployeeTypePage() {
-  const token = localStorage.getItem("token");
-  const [employeeTypes, setEmployeeTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const token = localStorage.getItem('token')
+  const [employeeTypes, setEmployeeTypes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [input, setInput] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editInput, setEditInput] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
+  const [input, setInput] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editInput, setEditInput] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
 
   const [searchFields, setSearchFields] = useState([
-    { field: "name", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
-  const searchOptions = [{ value: "name", label: "Employee Type" }];
+    { field: 'emp_type', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
+  const searchOptions = [{ value: 'emp_type', label: 'Employee Type' }]
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    if (!token) return {};
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
+    const token = localStorage.getItem('token')
+    if (!token) return {}
+    return { headers: { Authorization: `Bearer ${token}` } }
+  }
 
   const fetchTypes = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      let params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      let params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const { data } = await axios.get(`${API_URL}/api/employee-types`, {
         params,
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setEmployeeTypes(data);
+      setEmployeeTypes(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        setError(
-          e.response?.data?.message || "Failed to fetch Employee types.",
-        );
+        setError(e.response?.data?.message || 'Failed to fetch Employee types.')
       }
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   useEffect(() => {
-    fetchTypes();
-  }, []);
+    fetchTypes()
+  }, [])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+    e.preventDefault()
+    if (!input.trim()) return
     try {
       await axios.post(
         `${API_URL}/api/employee-types`,
-        { name: input },
+        { emp_type: input },
         getAuthHeaders(),
-      );
-      setInput("");
-      fetchTypes();
+      )
+      setInput('')
+      fetchTypes()
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
-        alert(error.response?.data?.message || "Failed to add employee type.");
+        alert(error.response?.data?.message || 'Failed to add employee type.')
     }
-  };
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this employee type?")) {
+    if (window.confirm('Are you sure you want to delete this employee type?')) {
       try {
         await axios.delete(`${API_URL}/api/employee-types/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
+        })
       } catch (e) {
         if (e.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         } else
           alert(
             `Error: ${
-              e.response?.data?.message || "Failed to delete employee type."
+              e.response?.data?.message || 'Failed to delete employee type.'
             }`,
-          );
+          )
       }
     }
-    fetchTypes();
-  };
+    fetchTypes()
+  }
 
   const handleEdit = (id, name) => {
-    setEditingId(id);
-    setEditInput(name);
-  };
+    setEditingId(id)
+    setEditInput(name)
+  }
 
   const handleUpdate = async (id) => {
-    if (!editInput.trim()) return;
+    if (!editInput.trim()) return
     try {
       await axios.put(
         `${API_URL}/api/employee-types/${id}`,
-        { name: editInput },
+        { emp_type: editInput },
         { headers: { Authorization: `Bearer ${token}` } },
-      );
-      setEditingId(null);
-      setEditInput("");
-      fetchTypes();
+      )
+      setEditingId(null)
+      setEditInput('')
+      fetchTypes()
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
         alert(
-          error.response?.data?.message || "Failed to update employee type.",
-        );
+          error.response?.data?.message || 'Failed to update employee type.',
+        )
     }
-  };
+  }
 
   const handleSearch = () => {
-    fetchTypes();
-  };
+    fetchTypes()
+  }
 
   useEffect(() => {
-    fetchTypes();
-  }, [searchFields, dateFilter]);
+    fetchTypes()
+  }, [searchFields, dateFilter])
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(`${API_URL}/api/employee-types/export`, {
         params,
-        responseType: "blob", // IMPORTANT
+        responseType: 'blob', // IMPORTANT
         ...getAuthHeaders(),
-      });
+      })
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `EmployeeTypes_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `EmployeeTypes_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       // Axios sends 401 here
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
 
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   const handleReset = () => {
-    setSearchFields([{ field: "name", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchTypes();
-  };
+    setSearchFields([{ field: 'name', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchTypes()
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
-          Employee Type{" "}
+          Employee Type{' '}
           <span className="text-success">({employeeTypes.length})</span>
         </h1>
         <div className="page-actions">
@@ -203,7 +201,7 @@ export default function EmployeeTypePage() {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
         </div>
       </div>
@@ -277,9 +275,9 @@ export default function EmployeeTypePage() {
                     </tr>
                   ) : (
                     employeeTypes.map((et) => (
-                      <tr key={et._id}>
+                      <tr key={et.id}>
                         <td>
-                          {editingId === et._id ? (
+                          {editingId === et.id ? (
                             <Col md={12}>
                               <Form.Control
                                 value={editInput}
@@ -289,18 +287,18 @@ export default function EmployeeTypePage() {
                               />
                             </Col>
                           ) : (
-                            et.name
+                            et.emp_type
                           )}
                         </td>
                         <td>
-                          {et.created_by ? et.created_by.name : ""}
+                          {et.created_by ? et.created_by.name : ''}
                           <br />
                           {et.created_on &&
                             new Date(et.created_on).toLocaleDateString()}
                         </td>
                         <td>
                           <div className="table-actions">
-                            {editingId === et._id ? (
+                            {editingId === et.id ? (
                               <>
                                 <Button
                                   className="emp-type-cancel"
@@ -312,7 +310,7 @@ export default function EmployeeTypePage() {
                                 <Button
                                   variant="primary"
                                   className="emp-type-update edit"
-                                  onClick={() => handleUpdate(et._id)}
+                                  onClick={() => handleUpdate(et.id)}
                                 >
                                   Update
                                 </Button>
@@ -321,13 +319,13 @@ export default function EmployeeTypePage() {
                               <>
                                 <button
                                   className="emp-type-edit icon-btn edit"
-                                  onClick={() => handleEdit(et._id, et.name)}
+                                  onClick={() => handleEdit(et.id, et.emp_type)}
                                 >
                                   <FaPen />
                                 </button>
                                 <button
                                   className="icon-btn delete"
-                                  onClick={() => handleDelete(et._id)}
+                                  onClick={() => handleDelete(et.id)}
                                 >
                                   <FaTrashAlt />
                                 </button>
@@ -345,5 +343,5 @@ export default function EmployeeTypePage() {
         </div>
       </Card>
     </div>
-  );
+  )
 }

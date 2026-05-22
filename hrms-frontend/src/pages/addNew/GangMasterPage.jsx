@@ -1,231 +1,233 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
 
-import FilterPanel from "../../utils/FilterPanel";
-import { FaPen, FaPlus, FaSearch, FaTrashAlt } from "react-icons/fa";
-import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+import FilterPanel from '../../utils/FilterPanel'
+import { FaPen, FaPlus, FaSearch, FaTrashAlt } from 'react-icons/fa'
+import { Alert, Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const GangMasterPage = () => {
-  const token = localStorage.getItem("token");
-  const [gangs, setGangs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [showForm, setShowForm] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const token = localStorage.getItem('token')
+  const [gangs, setGangs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
+  const [showForm, setShowForm] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [editingId, setEditingId] = useState(null)
 
   const [input, setInput] = useState({
-    name: "",
-    contactNo: "",
-  });
+    gang_master: '',
+    contact_no: '',
+  })
 
   const [searchFields, setSearchFields] = useState([
-    { field: "name", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'gang_master', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
   const searchOptions = [
-    { value: "name", label: "Gang Name" },
-    { value: "contactNo", label: "Contact No" },
-  ];
+    { value: 'gang_master', label: 'Gang Name' },
+    { value: 'contact_no', label: 'Contact No' },
+  ]
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    if (!token) return {};
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
+    const token = localStorage.getItem('token')
+    if (!token) return {}
+    return { headers: { Authorization: `Bearer ${token}` } }
+  }
 
   const fetchGangs = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      let params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      let params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const { data } = await axios.get(`${API_URL}/api/gangs`, {
         params,
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setGangs(data);
+      setGangs(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        setError(e.response?.data?.message || "Failed to fetch Gangs.");
+        setError(e.response?.data?.message || 'Failed to fetch Gangs.')
       }
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setInput({ ...input, [name]: value });
+    const { name, value } = e.target
+    setInput({ ...input, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const resetForm = () => {
-    setInput({ name: "", contactNo: "" });
-    setEditingId(null);
-    setValidationErrors({});
-  };
+    setInput({ gang_master: '', contact_no: '' })
+    setEditingId(null)
+    setValidationErrors({})
+  }
 
   const handleCancel = () => {
-    setShowForm(false);
-    resetForm();
-  };
+    setShowForm(false)
+    resetForm()
+  }
 
   const handleEdit = (g) => {
-    setEditingId(g);
+    setEditingId(g)
+
     setInput({
-      name: g.name || "",
-      contactNo: g.contactNo || "",
-    });
-    setShowSearch(false);
-    setShowForm(true);
-  };
+      gang_master: g.gang_master || '',
+      contact_no: g.contact_no || '',
+    })
+
+    setShowSearch(false)
+    setShowForm(true)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.name.trim()) {
-      alert("Please fix the validation error.");
+    e.preventDefault()
+    if (!input.gang_master.trim()) {
+      alert('Please fix the validation error.')
       setValidationErrors((prev) => ({
         ...prev,
-        name: "Gang Name is required",
-      }));
-      return;
+        name: 'Gang Name is required',
+      }))
+      return
     }
 
-    if (input.contactNo && !/^\d{10}$/.test(input.contactNo)) {
-      alert("Please fix the validation error.");
+    if (input.contact_no && !/^\d{10}$/.test(input.contact_no)) {
+      alert('Please fix the validation error.')
       setValidationErrors((prev) => ({
         ...prev,
-        contactNo: "Contact number must be 10 digits",
-      }));
-      return;
+        contactNo: 'Contact number must be 10 digits',
+      }))
+      return
     }
 
     try {
       if (editingId) {
         await axios.put(
-          `${API_URL}/api/gangs/${editingId._id}`,
+          `${API_URL}/api/gangs/${editingId.id}`,
           {
-            name: input.name,
-            contactNo: input.contactNo,
+            gang_master: input.gang_master,
+            contact_no: input.contact_no,
           },
           getAuthHeaders(),
-        );
-        alert("Gang updated successfully!");
+        )
+        alert('Gang updated successfully!')
       } else {
         await axios.post(
           `${API_URL}/api/gangs`,
           {
-            name: input.name,
-            contactNo: input.contactNo,
+            gang_master: input.gang_master,
+            contact_no: input.contact_no,
           },
           getAuthHeaders(),
-        );
-        alert("Gang created successfully!");
+        )
+        alert('Gang created successfully!')
       }
-      setShowForm(false);
-      resetForm();
-      fetchGangs();
+      setShowForm(false)
+      resetForm()
+      fetchGangs()
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else alert(error.response?.data?.message || "Failed to add gang.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else alert(error.response?.data?.message || 'Failed to add gang.')
     }
-  };
+  }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this gang?")) {
+    if (window.confirm('Are you sure you want to delete this gang?')) {
       try {
         await axios.delete(`${API_URL}/api/gangs/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        fetchGangs();
+        })
+        fetchGangs()
       } catch (e) {
         if (e.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         } else
           alert(
-            `Error: ${e.response?.data?.message || "Failed to delete gang."}`,
-          );
+            `Error: ${e.response?.data?.message || 'Failed to delete gang.'}`,
+          )
       }
     }
-  };
+  }
 
   const handleSearch = () => {
-    fetchGangs();
-  };
+    fetchGangs()
+  }
 
   useEffect(() => {
-    fetchGangs();
-  }, [searchFields, dateFilter]);
+    fetchGangs()
+  }, [searchFields, dateFilter])
 
   const handleReset = () => {
-    setSearchFields([{ field: "name", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchGangs();
-  };
+    setSearchFields([{ field: 'name', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchGangs()
+  }
 
   const handleDownloadExcel = async () => {
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
 
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
-      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+      const randomNumber = Math.floor(1000000000 + Math.random() * 9000000000)
 
       const response = await axios.get(`${API_URL}/api/gangs/export`, {
         params,
-        responseType: "blob", // IMPORTANT
+        responseType: 'blob', // IMPORTANT
         ...getAuthHeaders(),
-      });
+      })
 
       // Create Excel File
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
 
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `Gangs_${randomNumber}.xlsx`;
-      link.click();
+      const link = document.createElement('a')
+      link.href = window.URL.createObjectURL(blob)
+      link.download = `Gangs_${randomNumber}.xlsx`
+      link.click()
     } catch (error) {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return
       }
-      console.error("Excel download error:", error);
-      alert("Failed to download Excel. Please try again.");
+      console.error('Excel download error:', error)
+      alert('Failed to download Excel. Please try again.')
     }
-  };
+  }
 
   return (
     <div className="page-container">
@@ -238,15 +240,15 @@ const GangMasterPage = () => {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           <button
             type="button"
             className="btn-primary"
             onClick={() => {
-              resetForm();
-              setShowForm(true);
-              setShowSearch(false);
+              resetForm()
+              setShowForm(true)
+              setShowSearch(false)
             }}
           >
             <FaPlus /> Add New
@@ -273,7 +275,7 @@ const GangMasterPage = () => {
             {editingId ? (
               <span>Edit Gang - {editingId.name}</span>
             ) : (
-              "Add New Gang"
+              'Add New Gang'
             )}
           </h2>
           <Form className="gang-form" onSubmit={handleSubmit}>
@@ -284,15 +286,15 @@ const GangMasterPage = () => {
                   <Form.Control
                     className="gang-input"
                     type="text"
-                    value={input.name}
-                    name="name"
+                    value={input.gang_master}
+                    name="gang_master"
                     onChange={handleInputChange}
                     placeholder="Gang Name"
-                    isInvalid={!!validationErrors.name}
+                    isInvalid={!!validationErrors.gang_master}
                   />
 
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.name}
+                    {validationErrors.gang_master}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -301,15 +303,15 @@ const GangMasterPage = () => {
                   <Form.Label className="gang-contact">Contact No</Form.Label>
                   <Form.Control
                     className="gang-contact-no"
-                    name="contactNo"
+                    name="contact_no"
                     type="text"
-                    value={input.contactNo}
+                    value={input.contact_no}
                     onChange={handleInputChange}
-                    isInvalid={!!validationErrors.contactNo}
+                    isInvalid={!!validationErrors.contact_no}
                     placeholder="Contact No"
                   />
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.contactNo}
+                    {validationErrors.contact_no}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -323,7 +325,7 @@ const GangMasterPage = () => {
                 Cancel
               </Button>
               <Button type="submit" variant="primary">
-                {editingId ? "Update" : "Submit"}
+                {editingId ? 'Update' : 'Submit'}
               </Button>
             </div>
           </Form>
@@ -357,14 +359,13 @@ const GangMasterPage = () => {
                   </tr>
                 ) : (
                   gangs.map((et) => (
-                    <tr key={et._id}>
-                      <td>{et.name}</td>
-                      <td>{et.contactNo}</td>
+                    <tr key={et.id}>
+                      <td>{et.gang_master}</td>
+                      <td>{et.contact_no}</td>
                       <td>
-                        {et.created_by ? et.created_by.name : ""}
-                        <br />
-                        {et.created_on &&
-                          new Date(et.created_on).toLocaleDateString()}
+                        {/* {et.created_by ? et.created_by.name : ''}
+                        <br /> */}
+                        {et.created_on}
                       </td>
                       <td>
                         <div className="table-actions">
@@ -376,7 +377,7 @@ const GangMasterPage = () => {
                           </button>
                           <button
                             className="icon-btn delete"
-                            onClick={() => handleDelete(et._id)}
+                            onClick={() => handleDelete(et.id)}
                           >
                             <FaTrashAlt />
                           </button>
@@ -391,7 +392,7 @@ const GangMasterPage = () => {
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default GangMasterPage;
+export default GangMasterPage

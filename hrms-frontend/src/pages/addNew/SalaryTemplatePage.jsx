@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import FilterPanel from "../../utils/FilterPanel";
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import FilterPanel from '../../utils/FilterPanel'
 import {
   FaPen,
   FaMinus,
@@ -8,125 +8,127 @@ import {
   FaSearch,
   FaTrash,
   FaTrashAlt,
-} from "react-icons/fa";
-import { Button, Card, Col, Form, Row, Table } from "react-bootstrap";
+} from 'react-icons/fa'
+import { Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API_BASE_URL = `${API_URL}/api/salary-templates`;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_BASE_URL = `${API_URL}/api/salary-templates`
 
 export default function SalaryTemplatePage() {
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [templates, setTemplates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const initialFormData = {
-    templateName: "",
-    rank: "",
-    grossSalary: "",
-    basicSalary: "",
-    perDaySalary: "",
-    hra: "",
+    templateName: '',
+    rank: '',
+
+    grossSalary: '',
+    basicSalary: '',
+    perDaySalary: '',
+    hra: '',
+
     earnings: [
       {
-        name: "",
-        rate: "",
-        amount: "",
-        from: "",
-        to: "",
-        calculateOn: "",
-        select: "",
-        compare: "",
+        name: '',
+        rate: '',
+        amount: '',
+        from: '',
+        to: '',
+        calculateOn: '',
+        select: '',
+        compare: '',
       },
     ],
+
     deductions: [
       {
-        name: "",
-        rate: "",
-        amount: "",
-        from: "",
-        to: "",
-        calculateOn: "",
-        select: "",
-        compare: "",
+        name: '',
+        rate: '',
+        amount: '',
+        from: '',
+        to: '',
+        calculateOn: '',
+        select: '',
+        compare: '',
       },
     ],
-  };
-
-  const [formData, setFormData] = useState(initialFormData);
+  }
+  const [formData, setFormData] = useState(initialFormData)
 
   const [searchFields, setSearchFields] = useState([
-    { field: "templateName", keyword: "" },
-  ]);
+    { field: 'templateName', keyword: '' },
+  ])
 
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
 
   // Auth helper function (inline)
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (!token) {
-      window.location.href = "/login";
-      return {};
+      window.location.href = '/login'
+      return {}
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
-  };
+    }
+  }
 
   // Search options
   const searchOptions = [
-    { value: "templateName", label: "Template Name" },
-    { value: "rank", label: "Rank" },
-    { value: "grossSalary", label: "Gross Salary" },
-    { value: "basicSalary", label: "Basic Salary" },
-  ];
+    { value: 'templateName', label: 'Template Name' },
+    { value: 'rank', label: 'Rank' },
+    { value: 'grossSalary', label: 'Gross Salary' },
+    { value: 'basicSalary', label: 'Basic Salary' },
+  ]
 
   // Fetch salary templates with authentication
   const fetchTemplates = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
 
       const { data } = await axios.get(API_BASE_URL, {
         params,
         ...getAuthHeaders(),
-      });
-      setTemplates(data.data || data);
+      })
+      setTemplates(data.data || data)
     } catch (error) {
-      console.error("Error fetching templates:", error);
-      setError("Failed to fetch templates. Please check your authentication.");
+      console.error('Error fetching templates:', error)
+      setError('Failed to fetch templates. Please check your authentication.')
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchTemplates();
-  }, []);
+    fetchTemplates()
+  }, [])
 
-  const handleSearch = () => fetchTemplates();
+  const handleSearch = () => fetchTemplates()
   const handleReset = () => {
-    setSearchFields([{ field: "templateName", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchTemplates();
-  };
+    setSearchFields([{ field: 'templateName', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchTemplates()
+  }
 
   // Add/Remove rows for earnings and deductions
   const addEarningRow = () =>
@@ -135,17 +137,17 @@ export default function SalaryTemplatePage() {
       earnings: [
         ...formData.earnings,
         {
-          name: "",
-          rate: "",
-          amount: "",
-          from: "",
-          to: "",
-          calculateOn: "",
-          select: "",
-          compare: "",
+          name: '',
+          rate: '',
+          amount: '',
+          from: '',
+          to: '',
+          calculateOn: '',
+          select: '',
+          compare: '',
         },
       ],
-    });
+    })
 
   const addDeductionRow = () =>
     setFormData({
@@ -153,130 +155,184 @@ export default function SalaryTemplatePage() {
       deductions: [
         ...formData.deductions,
         {
-          name: "",
-          rate: "",
-          amount: "",
-          from: "",
-          to: "",
-          calculateOn: "",
-          select: "",
-          compare: "",
+          name: '',
+          rate: '',
+          amount: '',
+          from: '',
+          to: '',
+          calculateOn: '',
+          select: '',
+          compare: '',
         },
       ],
-    });
+    })
 
   const removeEarningRow = (idx) =>
     setFormData({
       ...formData,
       earnings: formData.earnings.filter((_, i) => i !== idx),
-    });
+    })
 
   const removeDeductionRow = (idx) =>
     setFormData({
       ...formData,
       deductions: formData.deductions.filter((_, i) => i !== idx),
-    });
+    })
 
   // Handle input changes
   const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value })
 
   const handleRowChange = (arr, idx, field, value) => {
-    const updated = [...formData[arr]];
-    updated[idx][field] = value;
-    setFormData({ ...formData, [arr]: updated });
-  };
+    const updated = [...formData[arr]]
+    updated[idx][field] = value
+    setFormData({ ...formData, [arr]: updated })
+  }
 
   // Calculate per day salary
   useEffect(() => {
     if (formData.grossSalary) {
-      const gross = parseFloat(formData.grossSalary) || 0;
-      const perDay = gross / 30;
-      setFormData((prev) => ({ ...prev, perDaySalary: perDay.toFixed(2) }));
+      const gross = parseFloat(formData.grossSalary) || 0
+      const perDay = gross / 30
+      setFormData((prev) => ({ ...prev, perDaySalary: perDay.toFixed(2) }))
     }
-  }, [formData.grossSalary]);
+  }, [formData.grossSalary])
 
   const resetForm = () => {
-    setEditingTemplate(null);
-    setFormData(initialFormData);
-  };
+    setEditingTemplate(null)
+    setFormData(initialFormData)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+
     try {
+      const payload = {
+        template_name: formData.templateName,
+        rank: formData.rank,
+
+        gross_salary: formData.grossSalary,
+        gross_salary_type: 'Monthly',
+
+        basic_salary: formData.basicSalary,
+        basic_salary_type: 'Monthly',
+
+        perday_salary: formData.perDaySalary,
+
+        hra: formData.hra,
+
+        earnings: formData.earnings.map((e) => ({
+          earning_name: e.name,
+          earning_rate: e.rate,
+          earning_amount: e.amount,
+          ea_from_date: e.from,
+          ea_to_date: e.to,
+          ea_calculateon: e.calculateOn,
+          ea_operator: e.select,
+          ea_comp_operator: e.compare,
+        })),
+
+        deductions: formData.deductions.map((d) => ({
+          deduction_name: d.name,
+          deduction_rate: d.rate,
+          deduction_amount: d.amount,
+          from_date: d.from,
+          to_date: d.to,
+          dd_calculateon: d.calculateOn,
+          dd_operator: d.select,
+          dd_comp_operator: d.compare,
+        })),
+      }
+
       if (editingTemplate) {
         await axios.put(
-          `${API_BASE_URL}/${editingTemplate._id}`,
-          formData,
+          `${API_BASE_URL}/${editingTemplate.id}`,
+          payload,
           getAuthHeaders(),
-        );
-        alert("Template updated successfully!");
+        )
+
+        alert('Template updated successfully!')
       } else {
-        await axios.post(API_BASE_URL, formData, getAuthHeaders());
-        alert("Template created successfully!");
+        await axios.post(API_BASE_URL, payload, getAuthHeaders())
+
+        alert('Template created successfully!')
       }
-      setShowForm(false);
-      resetForm();
-      fetchTemplates();
+
+      setShowForm(false)
+      resetForm()
+      fetchTemplates()
     } catch (error) {
-      console.error("Error saving template:", error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else {
-        alert(
-          `Error: ${
-            error.response?.data?.message || "Failed to save template."
-          }`,
-        );
-      }
+      console.error(error)
+
+      alert(error.response?.data?.message || 'Failed to save template')
     }
-  };
+  }
 
   const handleEdit = (template) => {
-    setEditingTemplate(template);
+    setEditingTemplate(template)
     setFormData({
-      templateName: template.templateName || "",
-      rank: template.rank || "",
-      grossSalary: template.grossSalary || "",
-      basicSalary: template.basicSalary || "",
-      perDaySalary: template.perDaySalary || "",
-      hra: template.hra || "",
-      earnings: template.earnings || [],
-      deductions: template.deductions || [],
-    });
-    setShowForm(true);
-    setShowSearch(false); // Hide search panel when editing
-  };
+      templateName: template.template_name || '',
+      rank: template.rank || '',
+      grossSalary: template.gross_salary || '',
+      basicSalary: template.basic_salary || '',
+      perDaySalary: template.perday_salary || '',
+      hra: template.hra || '',
+      earnings:
+        template.earnings?.map((e) => ({
+          name: e.earning_name || '',
+          rate: e.earning_rate || '',
+          amount: e.earning_amount || '',
+          from: e.ea_from_date || '',
+          to: e.ea_to_date || '',
+          calculateOn: e.ea_calculateon || '',
+          select: e.ea_operator || '',
+          compare: e.ea_comp_operator || '',
+        })) || [],
+
+      deductions:
+        template.deductions?.map((d) => ({
+          name: d.deduction_name || '',
+          rate: d.deduction_rate || '',
+          amount: d.deduction_amount || '',
+          from: d.from_date || '',
+          to: d.to_date || '',
+          calculateOn: d.dd_calculateon || '',
+          select: d.dd_operator || '',
+          compare: d.dd_comp_operator || '',
+        })) || [],
+    })
+    setShowForm(true)
+    setShowSearch(false) // Hide search panel when editing
+  }
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this template?"))
-      return;
+    if (!window.confirm('Are you sure you want to delete this template?'))
+      return
     try {
-      await axios.delete(`${API_BASE_URL}/${id}`, getAuthHeaders());
-      alert("Template deleted successfully!");
-      fetchTemplates();
+      await axios.delete(`${API_BASE_URL}/${id}`, getAuthHeaders())
+      alert('Template deleted successfully!')
+      fetchTemplates()
     } catch (error) {
-      console.error("Error deleting template:", error);
+      console.error('Error deleting template:', error)
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        alert("Failed to delete template.");
+        alert('Failed to delete template.')
       }
     }
-  };
+  }
 
   const handleCancel = () => {
-    setShowForm(false);
-    resetForm();
-  };
+    setShowForm(false)
+    resetForm()
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
-          Salary Template{" "}
+          Salary Template{' '}
           <span className="text-success">({templates.length})</span>
         </h1>
         <div className="page-actions">
@@ -284,15 +340,15 @@ export default function SalaryTemplatePage() {
             className="search-btn" // Changed class name
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
 
           <button
             className="btn-primary"
             onClick={() => {
-              setShowSearch(false);
-              resetForm();
-              setShowForm(true);
+              setShowSearch(false)
+              resetForm()
+              setShowForm(true)
             }}
           >
             <FaPlus /> Add New
@@ -323,7 +379,7 @@ export default function SalaryTemplatePage() {
             {editingTemplate ? (
               <span>Edit Salary Template - {formData.templateName}</span>
             ) : (
-              "Add New Salary Template"
+              'Add New Salary Template'
             )}
           </h2>
 
@@ -438,7 +494,7 @@ export default function SalaryTemplatePage() {
                 </Col>
 
                 <Col md={4} xs={12} sm={4} className="mb-2 mb-md-0 mb-sm-0">
-                  <strong>Balance:</strong>{" "}
+                  <strong>Balance:</strong>{' '}
                   {(
                     parseFloat(formData.grossSalary || 0) -
                     parseFloat(formData.basicSalary || 0)
@@ -480,9 +536,9 @@ export default function SalaryTemplatePage() {
                           value={row.name}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "name",
+                              'name',
                               e.target.value,
                             )
                           }
@@ -505,9 +561,9 @@ export default function SalaryTemplatePage() {
                           value={row.rate}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "rate",
+                              'rate',
                               e.target.value,
                             )
                           }
@@ -520,9 +576,9 @@ export default function SalaryTemplatePage() {
                           value={row.amount}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "amount",
+                              'amount',
                               e.target.value,
                             )
                           }
@@ -534,9 +590,9 @@ export default function SalaryTemplatePage() {
                           value={row.from}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "from",
+                              'from',
                               e.target.value,
                             )
                           }
@@ -548,9 +604,9 @@ export default function SalaryTemplatePage() {
                           value={row.to}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "to",
+                              'to',
                               e.target.value,
                             )
                           }
@@ -561,9 +617,9 @@ export default function SalaryTemplatePage() {
                           value={row.calculateOn}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "calculateOn",
+                              'calculateOn',
                               e.target.value,
                             )
                           }
@@ -578,9 +634,9 @@ export default function SalaryTemplatePage() {
                           value={row.select}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "select",
+                              'select',
                               e.target.value,
                             )
                           }
@@ -597,9 +653,9 @@ export default function SalaryTemplatePage() {
                           value={row.compare}
                           onChange={(e) =>
                             handleRowChange(
-                              "earnings",
+                              'earnings',
                               idx,
-                              "compare",
+                              'compare',
                               e.target.value,
                             )
                           }
@@ -656,9 +712,9 @@ export default function SalaryTemplatePage() {
                           value={row.name}
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "name",
+                              'name',
                               e.target.value,
                             )
                           }
@@ -680,9 +736,9 @@ export default function SalaryTemplatePage() {
                           placeholder="Rate (%)"
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "rate",
+                              'rate',
                               e.target.value,
                             )
                           }
@@ -695,9 +751,9 @@ export default function SalaryTemplatePage() {
                           placeholder="Amount"
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "amount",
+                              'amount',
                               e.target.value,
                             )
                           }
@@ -709,9 +765,9 @@ export default function SalaryTemplatePage() {
                           value={row.from}
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "from",
+                              'from',
                               e.target.value,
                             )
                           }
@@ -723,9 +779,9 @@ export default function SalaryTemplatePage() {
                           value={row.to}
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "to",
+                              'to',
                               e.target.value,
                             )
                           }
@@ -736,9 +792,9 @@ export default function SalaryTemplatePage() {
                           value={row.calculateOn}
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "calculateOn",
+                              'calculateOn',
                               e.target.value,
                             )
                           }
@@ -753,9 +809,9 @@ export default function SalaryTemplatePage() {
                           value={row.select}
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "select",
+                              'select',
                               e.target.value,
                             )
                           }
@@ -771,9 +827,9 @@ export default function SalaryTemplatePage() {
                           placeholder="Amount to compare"
                           onChange={(e) =>
                             handleRowChange(
-                              "deductions",
+                              'deductions',
                               idx,
-                              "compare",
+                              'compare',
                               e.target.value,
                             )
                           }
@@ -806,7 +862,7 @@ export default function SalaryTemplatePage() {
                 Cancel
               </Button>
               <Button type="submit" className="primary">
-                {editingTemplate ? "Update" : "Submit"}
+                {editingTemplate ? 'Update' : 'Submit'}
               </Button>
             </div>
           </Form>
@@ -832,21 +888,21 @@ export default function SalaryTemplatePage() {
                 <tbody>
                   {templates.length > 0 ? (
                     templates.map((template, index) => (
-                      <tr key={template._id}>
+                      <tr key={template.id}>
                         <td>{index + 1}</td>
-                        <td>{template.templateName || "-"}</td>
-                        <td>{template.rank || "-"}</td>
+                        <td>{template.template_name || '-'}</td>
+                        <td>{template.rank || '-'}</td>
                         <td>
-                          {template.grossSalary
-                            ? `${template.grossSalary} Per month`
-                            : "-"}
+                          {template.gross_salary
+                            ? `${template.gross_salary} Per month`
+                            : '-'}
                         </td>
                         <td>
-                          {template.basicSalary
-                            ? `${template.basicSalary} (Rs.)`
-                            : "-"}
+                          {template.basic_salary
+                            ? `${template.basic_salary} (Rs.)`
+                            : '-'}
                         </td>
-                        <td>{template.perDaySalary || "-"}</td>
+                        <td>{template.perday_salary || '-'}</td>
                         <td className="table-actions">
                           <button
                             className="icon-btn edit"
@@ -857,7 +913,7 @@ export default function SalaryTemplatePage() {
                           </button>
                           <button
                             className="icon-btn delete"
-                            onClick={() => handleDelete(template._id)}
+                            onClick={() => handleDelete(template.id)}
                             title="Delete Template"
                           >
                             <FaTrashAlt />
@@ -879,5 +935,5 @@ export default function SalaryTemplatePage() {
         </Card>
       )}
     </div>
-  );
+  )
 }
