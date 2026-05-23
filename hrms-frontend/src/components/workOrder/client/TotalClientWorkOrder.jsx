@@ -1,7 +1,7 @@
-import React from "react";
-import { useState } from "react";
-import { FaPlus, FaSearch, FaTimes } from "react-icons/fa";
-import FilterPanel from "../../../utils/FilterPanel";
+import React from 'react'
+import { useState } from 'react'
+import { FaPlus, FaSearch, FaTimes } from 'react-icons/fa'
+import FilterPanel from '../../../utils/FilterPanel'
 import {
   Alert,
   Button,
@@ -11,127 +11,127 @@ import {
   Modal,
   Row,
   Table,
-} from "react-bootstrap";
-import Select from "react-select";
-import axios from "axios";
-import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+} from 'react-bootstrap'
+import Select from 'react-select'
+import axios from 'axios'
+import { useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   customSelectStyles,
   formatDateAndTime,
   formatDateForInput,
   formatDDMMYYYY,
-} from "../../../utils/utils";
+} from '../../../utils/utils'
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const COMPANY_API = `${API_URL}/api/clients`;
-const API_BASE_URL = `${API_URL}/api`;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const COMPANY_API = `${API_URL}/api/clients`
+const API_BASE_URL = `${API_URL}/api`
 
 const TotalClientWorkOrder = () => {
-  const navigate = useNavigate();
-  const [showPkgDetailModal, setShowPkgDetailModal] = useState(false);
-  const [currentOrderIndex, setCurrentOrderIndex] = useState(null);
-  const [gangs, setGangs] = useState([]);
-  const [equipmentTypes, setEquipmentTypes] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [workOrderTypes, setWorkOrderTypes] = useState([]);
-  const [clientWorkOrder, setClientWorkOrder] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [orderDetails, setOrderDetails] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
+  const navigate = useNavigate()
+  const [showPkgDetailModal, setShowPkgDetailModal] = useState(false)
+  const [currentOrderIndex, setCurrentOrderIndex] = useState(null)
+  const [gangs, setGangs] = useState([])
+  const [equipmentTypes, setEquipmentTypes] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [workOrderTypes, setWorkOrderTypes] = useState([])
+  const [clientWorkOrder, setClientWorkOrder] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [orderDetails, setOrderDetails] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [isEditing, setIsEditing] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({})
 
   const initialFormData = {
-    clientId: "",
-    workOrderType: "",
-    workOrderNo: "",
-    workOrderDate: "",
-    igmNo: "",
-    importerName: "",
-    chaName: "",
-    vendor: "",
+    clientId: '',
+    workOrderType: '',
+    workOrderNo: '',
+    workOrderDate: '',
+    igmNo: '',
+    importerName: '',
+    chaName: '',
+    vendor: '',
     totalCargoPkg: 0,
     totalCargoWgt: 0,
-  };
-  const [formData, setFormData] = useState(initialFormData);
+  }
+  const [formData, setFormData] = useState(initialFormData)
 
   const [orderItems, setOrderItems] = useState([
     {
-      itemNo: "",
-      containerNo: "",
-      size: "",
-      vehichleNo: "",
-      exam: "",
-      remarks: "",
-      hours: "",
-      cbm: "",
-      totalCargoPkg: [{ value: "" }],
-      totalCargoWgt: [{ value: "" }],
+      itemNo: '',
+      containerNo: '',
+      size: '',
+      vehichleNo: '',
+      exam: '',
+      remarks: '',
+      hours: '',
+      cbm: '',
+      totalCargoPkg: [{ value: '' }],
+      totalCargoWgt: [{ value: '' }],
       equipmentType: [],
       gang: [],
     },
-  ]);
+  ])
 
-  const { clientId } = useParams();
+  const { clientId } = useParams()
   // console.log(clientId);
 
   useEffect(() => {
     const totalPkg = orderItems.reduce((sum, order) => {
       const pkgArray = Array.isArray(order.totalCargoPkg)
         ? order.totalCargoPkg
-        : [];
+        : []
 
-      return sum + pkgArray.reduce((s, p) => s + Number(p.value || 0), 0);
-    }, 0);
+      return sum + pkgArray.reduce((s, p) => s + Number(p.value || 0), 0)
+    }, 0)
 
     const totalWgt = orderItems.reduce((sum, order) => {
       const wgtArray = Array.isArray(order.totalCargoWgt)
         ? order.totalCargoWgt
-        : [];
+        : []
 
-      return sum + wgtArray.reduce((s, w) => s + Number(w.value || 0), 0);
-    }, 0);
+      return sum + wgtArray.reduce((s, w) => s + Number(w.value || 0), 0)
+    }, 0)
 
     setFormData((prev) => ({
       ...prev,
       totalCargoPkg: totalPkg,
       totalCargoWgt: totalWgt,
-    }));
-  }, [orderItems]);
+    }))
+  }, [orderItems])
 
   const [searchFields, setSearchFields] = useState([
-    { field: "clientName", keyword: "" },
-  ]);
-  const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+    { field: 'clientName', keyword: '' },
+  ])
+  const [dateFilter, setDateFilter] = useState({ from: '', to: '' })
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (!token) {
-      console.error("No token found in localStorage");
-      return {};
+      console.error('No token found in localStorage')
+      return {}
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
-  };
+    }
+  }
 
   const fetchAllClientWorkOrders = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const params = {};
-      const validSearch = searchFields.filter((f) => f.field && f.keyword);
+      const params = {}
+      const validSearch = searchFields.filter((f) => f.field && f.keyword)
       if (validSearch.length > 0)
-        params.searchFields = JSON.stringify(validSearch);
+        params.searchFields = JSON.stringify(validSearch)
       if (dateFilter.from && dateFilter.to) {
-        params.fromDate = dateFilter.from;
-        params.toDate = dateFilter.to;
+        params.fromDate = dateFilter.from
+        params.toDate = dateFilter.to
       }
       const response = await axios.get(
         `${API_BASE_URL}/client-work-order/${clientId}`,
@@ -139,480 +139,477 @@ const TotalClientWorkOrder = () => {
           params,
           ...getAuthHeaders(),
         },
-      );
+      )
       // console.log(response.data);
-      setClientWorkOrder(response.data);
+      setClientWorkOrder(response.data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else
         setError(
-          err.response?.data?.message || "Failed to fetch client work orders.",
-        );
+          err.response?.data?.message || 'Failed to fetch client work orders.',
+        )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchCompanies = async () => {
     try {
-      const { data } = await axios.get(COMPANY_API, getAuthHeaders());
-      setCompanies(data.data || data);
+      const { data } = await axios.get(COMPANY_API, getAuthHeaders())
+      setCompanies(data.data || data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to fetch clients. Please try again.')
 
-      console.error("Failed to fetch companies", err);
+      console.error('Failed to fetch companies', err)
     }
-  };
+  }
 
   const fetchWorkOrderTypes = async () => {
     try {
       const { data } = await axios.get(
         `${API_BASE_URL}/work-order-type`,
         getAuthHeaders(),
-      );
+      )
       // console.log(data);
-      setWorkOrderTypes(data);
+      setWorkOrderTypes(data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to fetch clients. Please try again.')
 
-      console.error("Failed to fetch companies", err);
+      console.error('Failed to fetch companies', err)
     }
-  };
+  }
 
   const fetchEquipmentTypes = async () => {
     try {
       // console.log("hello");
       const { data } = await axios.get(`${API_BASE_URL}/equipment-type`, {
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setEquipmentTypes(data);
+      setEquipmentTypes(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         setError(
-          e.response?.data?.message || "Failed to fetch Equipment Types.",
-        );
+          e.response?.data?.message || 'Failed to fetch Equipment Types.',
+        )
       }
     }
-  };
+  }
 
   const fetchGangs = async () => {
     try {
       const { data } = await axios.get(`${API_BASE_URL}/gangs`, {
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setGangs(data);
+      setGangs(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        setError(e.response?.data?.message || "Failed to fetch Gangs.");
+        setError(e.response?.data?.message || 'Failed to fetch Gangs.')
       }
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCompanies();
-    fetchWorkOrderTypes();
-    fetchAllClientWorkOrders();
-  }, []);
+    fetchCompanies()
+    fetchWorkOrderTypes()
+    fetchAllClientWorkOrders()
+  }, [])
 
   useEffect(() => {
-    fetchAllClientWorkOrders();
-  }, [searchFields, dateFilter]);
+    fetchAllClientWorkOrders()
+  }, [searchFields, dateFilter])
 
   const handleSearch = () => {
-    fetchAllClientWorkOrders();
-  };
+    fetchAllClientWorkOrders()
+  }
 
   const handleReset = () => {
-    setSearchFields([{ field: "clientName", keyword: "" }]);
-    setDateFilter({ from: "", to: "" });
-    fetchAllClientWorkOrders();
-  };
+    setSearchFields([{ field: 'clientName', keyword: '' }])
+    setDateFilter({ from: '', to: '' })
+    fetchAllClientWorkOrders()
+  }
 
   const searchOptions = [
-    { value: "clientName", label: "Client Name" },
-    { value: "workOrderNo", label: "Work Order No" },
-    { value: "workOrderType", label: "Work Order Type" },
-    { value: "containerNo", label: "Container No" },
-    { value: "vehichleNo", label: "Vehicle No" },
-    { value: "igmNo", label: "IGM No" },
-  ];
+    { value: 'clientName', label: 'Client Name' },
+    { value: 'workOrderNo', label: 'Work Order No' },
+    { value: 'workOrderType', label: 'Work Order Type' },
+    { value: 'containerNo', label: 'Container No' },
+    { value: 'vehichleNo', label: 'Vehicle No' },
+    { value: 'igmNo', label: 'IGM No' },
+  ]
 
   const handleView = (c) => {
-    setOrderDetails(c);
-    setShowViewModal(true);
-  };
+    setOrderDetails(c)
+    setShowViewModal(true)
+  }
 
   const resetForm = () => {
     setFormData({
-      clientId: "",
-      workOrderType: "",
-      workOrderNo: "",
-      workOrderDate: "",
-      igmNo: "",
-      importerName: "",
-      chaName: "",
-      vendor: "",
+      clientId: '',
+      workOrderType: '',
+      workOrderNo: '',
+      workOrderDate: '',
+      igmNo: '',
+      importerName: '',
+      chaName: '',
+      vendor: '',
       totalCargoPkg: 0,
       totalCargoWgt: 0,
-    });
+    })
 
     setOrderItems([
       {
-        itemNo: "",
-        containerNo: "",
-        size: "",
-        vehichleNo: "",
-        exam: "",
-        remarks: "",
-        hours: "",
-        cbm: "",
-        totalCargoPkg: [{ value: "" }],
-        totalCargoWgt: [{ value: "" }],
+        itemNo: '',
+        containerNo: '',
+        size: '',
+        vehichleNo: '',
+        exam: '',
+        remarks: '',
+        hours: '',
+        cbm: '',
+        totalCargoPkg: [{ value: '' }],
+        totalCargoWgt: [{ value: '' }],
         equipmentType: [],
         gang: [],
       },
-    ]);
+    ])
 
-    setIsEditing(null);
-    setValidationErrors({});
-  };
+    setIsEditing(null)
+    setValidationErrors({})
+  }
 
   const handleEdit = (c) => {
     // console.log(c);
-    setIsEditing(c._id);
-    setOrderDetails(c);
+    setIsEditing(c._id)
+    setOrderDetails(c)
     setFormData({
       ...initialFormData,
-      clientId: c.client?._id || "",
-      workOrderType: c.workOrderType || "",
-      workOrderNo: c.workOrderNo || "",
-      workOrderDate: formatDateForInput(c.workOrderDate) || "",
-      igmNo: c.igmNo || "",
-      importerName: c.importerName || "",
-      chaName: c.chaName || "",
-      vendor: c.vendor || "",
-    });
+      clientId: c.client?._id || '',
+      workOrderType: c.workOrderType || '',
+      workOrderNo: c.workOrderNo || '',
+      workOrderDate: formatDateForInput(c.workOrderDate) || '',
+      igmNo: c.igmNo || '',
+      importerName: c.importerName || '',
+      chaName: c.chaName || '',
+      vendor: c.vendor || '',
+    })
 
     setOrderItems(
       c.orderItems && c.orderItems.length
         ? c.orderItems.map((order) => ({
             _id: order._id,
-            cliWorkOrderId: order.cliWorkOrderId || "",
-            itemNo: order.itemNo || "",
-            containerNo: order.containerNo || "",
-            size: order.size || "",
-            vehichleNo: order.vehichleNo || "",
-            exam: order.exam || "",
-            remarks: order.remarks || "",
-            hours: order.hours || "",
-            cbm: order.cbm || "",
-            totalCargoPkg: order.totalCargoPkg || "",
-            totalCargoWgt: order.totalCargoWgt || "",
-            equipmentType: order.equipmentType || "",
-            gang: order.gang || "",
+            cliWorkOrderId: order.cliWorkOrderId || '',
+            itemNo: order.itemNo || '',
+            containerNo: order.containerNo || '',
+            size: order.size || '',
+            vehichleNo: order.vehichleNo || '',
+            exam: order.exam || '',
+            remarks: order.remarks || '',
+            hours: order.hours || '',
+            cbm: order.cbm || '',
+            totalCargoPkg: order.totalCargoPkg || '',
+            totalCargoWgt: order.totalCargoWgt || '',
+            equipmentType: order.equipmentType || '',
+            gang: order.gang || '',
           }))
         : [
             {
-              itemNo: "",
-              containerNo: "",
-              size: "",
-              vehichleNo: "",
-              exam: "",
-              remarks: "",
-              hours: "",
-              cbm: "",
-              totalCargoPkg: [{ value: "" }],
-              totalCargoWgt: [{ value: "" }],
+              itemNo: '',
+              containerNo: '',
+              size: '',
+              vehichleNo: '',
+              exam: '',
+              remarks: '',
+              hours: '',
+              cbm: '',
+              totalCargoPkg: [{ value: '' }],
+              totalCargoWgt: [{ value: '' }],
               equipmentType: [],
               gang: [],
             },
           ],
-    );
-    setShowForm(true);
-  };
+    )
+    setShowForm(true)
+  }
 
   const handleDelete = async (order) => {
-    if (window.confirm("Are you sure you want to delete this work order?")) {
+    if (window.confirm('Are you sure you want to delete this work order?')) {
       try {
         await axios.delete(`${API_BASE_URL}/client-work-order/${order}`, {
           ...getAuthHeaders(),
-        });
-        alert("Work Order deleted successfully!");
-        fetchAllClientWorkOrders();
+        })
+        alert('Work Order deleted successfully!')
+        fetchAllClientWorkOrders()
       } catch (e) {
-        console.log(e);
+        console.log(e)
         if (e.response?.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
+          localStorage.removeItem('token')
+          window.location.href = '/login'
         } else
-          alert(
-            `Delete failed: ${e.response?.data?.message || "Server error"}`,
-          );
+          alert(`Delete failed: ${e.response?.data?.message || 'Server error'}`)
       }
     }
-  };
+  }
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const handleOrderItemChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedOrders = [...orderItems];
-    updatedOrders[index][name] = value;
-    setOrderItems(updatedOrders);
+    const { name, value } = e.target
+    const updatedOrders = [...orderItems]
+    updatedOrders[index][name] = value
+    setOrderItems(updatedOrders)
 
     if (validationErrors[`${name}_${index}`]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [`${name}_${index}`]: "",
-      }));
+        [`${name}_${index}`]: '',
+      }))
     }
-  };
+  }
 
   const addOrderItems = () => {
     setOrderItems([
       ...orderItems,
       {
-        itemNo: "",
-        containerNo: "",
-        size: "",
-        vehichleNo: "",
-        exam: "",
-        remarks: "",
-        hours: "",
-        cbm: "",
-        totalCargoPkg: [{ value: "" }],
-        totalCargoWgt: [{ value: "" }],
+        itemNo: '',
+        containerNo: '',
+        size: '',
+        vehichleNo: '',
+        exam: '',
+        remarks: '',
+        hours: '',
+        cbm: '',
+        totalCargoPkg: [{ value: '' }],
+        totalCargoWgt: [{ value: '' }],
         equipmentType: [],
         gang: [],
       },
-    ]);
-  };
+    ])
+  }
 
   const removeOrderItem = (index) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index));
-  };
+    setOrderItems(orderItems.filter((_, i) => i !== index))
+  }
 
   const handlePackageChange = (field, index, value) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
         [field]: updated[currentOrderIndex][field].map((item, i) =>
           i === index ? { ...item, value } : item,
         ),
-      };
+      }
 
-      return updated;
-    });
+      return updated
+    })
 
     if (validationErrors[`${field}_${currentOrderIndex}_${index}`]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [`${field}_${currentOrderIndex}_${index}`]: "",
-      }));
+        [`${field}_${currentOrderIndex}_${index}`]: '',
+      }))
     }
-  };
+  }
 
   const handlePackageAdd = (field) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
-      const currentField = updated[currentOrderIndex][field] || [];
+      const currentField = updated[currentOrderIndex][field] || []
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
-        [field]: [...currentField, { value: "" }],
-      };
+        [field]: [...currentField, { value: '' }],
+      }
 
-      return updated;
-    });
-  };
+      return updated
+    })
+  }
 
   const handlePackageRemove = (field) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
-      const currentField = updated[currentOrderIndex][field];
+      const currentField = updated[currentOrderIndex][field]
 
-      if (!currentField || currentField.length <= 1) return prev;
+      if (!currentField || currentField.length <= 1) return prev
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
         [field]: currentField.slice(0, -1),
-      };
+      }
 
-      return updated;
-    });
-  };
+      return updated
+    })
+  }
 
   const handleSelectChange = (field, selected) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
-      updated[currentOrderIndex][field] = selected;
-      return updated;
-    });
-  };
+      const updated = [...prev]
+      updated[currentOrderIndex][field] = selected
+      return updated
+    })
+  }
 
   const validateCompanyDetails = () => {
-    const errors = {};
+    const errors = {}
 
     if (!formData.clientId) {
-      errors.clientId = "Client is required.";
+      errors.clientId = 'Client is required.'
     }
     if (!formData.workOrderType) {
-      errors.workOrderType = "Work order type is required.";
+      errors.workOrderType = 'Work order type is required.'
     }
     if (!formData.workOrderNo.trim())
-      errors.workOrderNo = "Work Order No is required.";
+      errors.workOrderNo = 'Work Order No is required.'
 
     // if (!formData.companyName.trim())
     //   errors.companyName = "Company Name is required.";
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const validateOrderItems = () => {
-    const errors = {};
+    const errors = {}
     orderItems.forEach((orderItem, idx) => {
-      if (!orderItem.itemNo || orderItem.itemNo.trim() === "") {
-        errors[`itemNo_${idx}`] = "Item No is required";
+      if (!orderItem.itemNo || orderItem.itemNo.trim() === '') {
+        errors[`itemNo_${idx}`] = 'Item No is required'
       }
-    });
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const validateCargoTotals = () => {
-    const errors = {};
+    const errors = {}
 
     orderItems.forEach((order, orderIndex) => {
-      (order.totalCargoPkg || []).forEach((pkg, i) => {
+      ;(order.totalCargoPkg || []).forEach((pkg, i) => {
         if (!pkg.value && isNaN(pkg.value)) {
-          errors[`totalCargoPkg_${orderIndex}_${i}`] = "PKG must be a number";
+          errors[`totalCargoPkg_${orderIndex}_${i}`] = 'PKG must be a number'
         }
-      });
+      })
 
-      (order.totalCargoWgt || []).forEach((wgt, i) => {
+      ;(order.totalCargoWgt || []).forEach((wgt, i) => {
         if (!wgt.value && isNaN(wgt.value)) {
-          errors[`totalCargoWgt_${orderIndex}_${i}`] =
-            "Weight must be a number";
+          errors[`totalCargoWgt_${orderIndex}_${i}`] = 'Weight must be a number'
         }
-      });
-    });
+      })
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const getTotalFromArray = (arr) => {
-    if (!Array.isArray(arr)) return 0;
+    if (!Array.isArray(arr)) return 0
 
     return arr.reduce((sum, item) => {
-      const num = parseFloat(item.value);
-      return sum + (isNaN(num) ? 0 : num);
-    }, 0);
-  };
+      const num = parseFloat(item.value)
+      return sum + (isNaN(num) ? 0 : num)
+    }, 0)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateCompanyDetails()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     } else if (!validateOrderItems()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     } else if (!validateCargoTotals()) {
-      alert("Cargo PKG and Weight must be valid numbers.");
-      return;
+      alert('Cargo PKG and Weight must be valid numbers.')
+      return
     }
 
     const formattedOrderItems = orderItems.map((item) => ({
       ...item,
       totalCargoPkgSum: getTotalFromArray(item.totalCargoPkg),
       totalCargoWgtSum: getTotalFromArray(item.totalCargoWgt),
-    }));
+    }))
 
     const data = {
       ...formData,
       workOrderDate: new Date(formData.workOrderDate),
       formattedOrderItems,
-    };
+    }
 
     try {
       const config = {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           ...getAuthHeaders().headers,
         },
-      };
+      }
       await axios.put(
         `${API_BASE_URL}/client-work-order/${isEditing}`,
         data,
         config,
-      );
+      )
       // console.log(res.data);
-      alert("Client Work Order updated successfully!");
+      alert('Client Work Order updated successfully!')
 
-      resetForm();
-      setShowForm(false);
-      fetchAllClientWorkOrders();
+      resetForm()
+      setShowForm(false)
+      fetchAllClientWorkOrders()
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         alert(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
+          `Operation failed: ${err.response?.data?.message || 'Server error'}`,
+        )
         setError(
-          `Operation failed: ${err.response?.data?.message || "Server error"}`,
-        );
+          `Operation failed: ${err.response?.data?.message || 'Server error'}`,
+        )
       }
     }
-  };
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">
           {isEditing ? (
-            "Work Order Detail"
+            'Work Order Detail'
           ) : (
             <>
-              Work Order List{" "}
+              Work Order List{' '}
               <span className="fs-4 text-success">
-                ({clientWorkOrder[0]?.client?.companyName} -{" "}
+                ({clientWorkOrder[0]?.client?.companyName} -{' '}
                 {clientWorkOrder.length})
               </span>
             </>
@@ -624,14 +621,14 @@ const TotalClientWorkOrder = () => {
             className="search-btn"
             onClick={() => setShowSearch(!showSearch)}
           >
-            <FaSearch /> {showSearch ? "Hide Search" : "Search"}
+            <FaSearch /> {showSearch ? 'Hide Search' : 'Search'}
           </button>
           {isEditing ? (
-            ""
+            ''
           ) : (
             <Button
               variant="success"
-              onClick={() => navigate("/work-order/client-work-order")}
+              onClick={() => navigate('/work-order/client-work-order')}
             >
               Go Back
             </Button>
@@ -658,7 +655,7 @@ const TotalClientWorkOrder = () => {
             {isEditing ? (
               <span>Edit Work Order - {formData.workOrderNo}</span>
             ) : (
-              "Add Work Order"
+              'Add Work Order'
             )}
           </h2>
 
@@ -845,7 +842,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="itemNo"
-                        value={orderItem.itemNo || ""}
+                        value={orderItem.itemNo || ''}
                         isInvalid={!!validationErrors[`itemNo_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -856,7 +853,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="containerNo"
-                        value={orderItem.containerNo || ""}
+                        value={orderItem.containerNo || ''}
                         isInvalid={!!validationErrors[`containerNo_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -867,7 +864,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="size"
-                        value={orderItem.size || ""}
+                        value={orderItem.size || ''}
                         isInvalid={!!validationErrors[`size_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -878,7 +875,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="vehichleNo"
-                        value={orderItem.vehichleNo || ""}
+                        value={orderItem.vehichleNo || ''}
                         isInvalid={!!validationErrors[`vehichleNo_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -889,7 +886,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="exam"
-                        value={orderItem.exam || ""}
+                        value={orderItem.exam || ''}
                         isInvalid={!!validationErrors[`exam_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -900,7 +897,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="remarks"
-                        value={orderItem.remarks || ""}
+                        value={orderItem.remarks || ''}
                         isInvalid={!!validationErrors[`remarks_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -911,7 +908,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="hours"
-                        value={orderItem.hours || ""}
+                        value={orderItem.hours || ''}
                         isInvalid={!!validationErrors[`hours_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -922,7 +919,7 @@ const TotalClientWorkOrder = () => {
                     <td>
                       <Form.Control
                         name="cbm"
-                        value={orderItem.cbm || ""}
+                        value={orderItem.cbm || ''}
                         isInvalid={!!validationErrors[`cbm_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -935,14 +932,14 @@ const TotalClientWorkOrder = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            setCurrentOrderIndex(idx);
+                            setCurrentOrderIndex(idx)
                             if (!orderItems[idx].totalCargoPkg)
-                              orderItems[idx].totalCargoPkg = [{ value: "" }];
+                              orderItems[idx].totalCargoPkg = [{ value: '' }]
                             if (!orderItems[idx].totalCargoWgt)
-                              orderItems[idx].totalCargoWgt = [{ value: "" }];
-                            setShowPkgDetailModal(true);
-                            fetchGangs();
-                            fetchEquipmentTypes();
+                              orderItems[idx].totalCargoWgt = [{ value: '' }]
+                            setShowPkgDetailModal(true)
+                            fetchGangs()
+                            fetchEquipmentTypes()
                           }}
                           className="icon-btn view "
                         >
@@ -967,14 +964,14 @@ const TotalClientWorkOrder = () => {
                 variant="secondary"
                 className="me-2"
                 onClick={() => {
-                  resetForm();
-                  setShowForm(false);
+                  resetForm()
+                  setShowForm(false)
                 }}
               >
                 Cancel
               </Button>
               <Button type="button" variant="primary" onClick={handleSubmit}>
-                {isEditing ? "Update Work Order" : "Save Work Order"}
+                {isEditing ? 'Update Work Order' : 'Save Work Order'}
               </Button>
             </div>
           </Form>
@@ -1016,17 +1013,17 @@ const TotalClientWorkOrder = () => {
                   clientWorkOrder.map((c, i) => (
                     <tr key={c._id}>
                       <td>{i + 1}</td>
-                      <td>{c.client?.companyName || ""}</td>
-                      <td>{c.workOrderType || ""}</td>
-                      <td>{c.workOrderNo || ""}</td>
-                      <td>{formatDDMMYYYY(c.workOrderDate) || ""}</td>
-                      <td>{c.igmNo || ""}</td>
-                      <td>{c.chaName || ""}</td>
-                      <td>{c.totalCargoPkg || ""}</td>
-                      <td>{c.totalCargoWgt || ""}</td>
+                      <td>{c.client?.companyName || ''}</td>
+                      <td>{c.workOrderType || ''}</td>
+                      <td>{c.workOrderNo || ''}</td>
+                      <td>{formatDDMMYYYY(c.workOrderDate) || ''}</td>
+                      <td>{c.igmNo || ''}</td>
+                      <td>{c.chaName || ''}</td>
+                      <td>{c.totalCargoPkg || ''}</td>
+                      <td>{c.totalCargoWgt || ''}</td>
                       <td>
-                        {c.created_by?.name || ""} <br />
-                        {c.created_on ? formatDateAndTime(c.created_on) : ""}
+                        {c.created_by?.name || ''} <br />
+                        {c.created_on ? formatDateAndTime(c.created_on) : ''}
                       </td>
                       <td>
                         <div className="table-actions">
@@ -1050,13 +1047,13 @@ const TotalClientWorkOrder = () => {
                           </button>
                           <button
                             className="tb-action-btn add"
-                            onClick={() => handleAction("approve", c._id)}
+                            onClick={() => handleAction('approve', c._id)}
                           >
                             Approve
                           </button>
                           <button
                             className="tb-action-btn edit"
-                            onClick={() => handleAction("approve", c._id)}
+                            onClick={() => handleAction('approve', c._id)}
                           >
                             Print
                           </button>
@@ -1083,37 +1080,37 @@ const TotalClientWorkOrder = () => {
             {orderDetails && (
               <>
                 <p>
-                  <strong>Client Name:</strong>{" "}
+                  <strong>Client Name:</strong>{' '}
                   {orderDetails.client?.companyName}
                 </p>
                 <p>
                   <strong>Order No:</strong> {orderDetails.workOrderNo}
                 </p>
                 <p>
-                  <strong>Date:</strong>{" "}
+                  <strong>Date:</strong>{' '}
                   {orderDetails.workOrderDate
                     ? formatDateAndTime(orderDetails.workOrderDate)
-                    : "N/A"}
+                    : 'N/A'}
                 </p>
                 <p>
-                  <strong>IGM No:</strong> {orderDetails.igmNo || "N/A"}
+                  <strong>IGM No:</strong> {orderDetails.igmNo || 'N/A'}
                 </p>
                 <p>
-                  <strong>Importer Name:</strong>{" "}
-                  {orderDetails.importerName || "N/A"}
+                  <strong>Importer Name:</strong>{' '}
+                  {orderDetails.importerName || 'N/A'}
                 </p>
                 <p>
-                  <strong>CHA Name:</strong> {orderDetails.chaName || "N/A"}
+                  <strong>CHA Name:</strong> {orderDetails.chaName || 'N/A'}
                 </p>
                 <p>
-                  <strong>Vendor Name:</strong> {orderDetails.vendor || "N/A"}
+                  <strong>Vendor Name:</strong> {orderDetails.vendor || 'N/A'}
                 </p>
               </>
             )}
           </Modal.Body>
         </Modal>
       ) : (
-        ""
+        ''
       )}
 
       <Modal
@@ -1154,7 +1151,7 @@ const TotalClientWorkOrder = () => {
                               }
                               onChange={(e) =>
                                 handlePackageChange(
-                                  "totalCargoPkg",
+                                  'totalCargoPkg',
                                   index,
                                   e.target.value,
                                 )
@@ -1172,7 +1169,7 @@ const TotalClientWorkOrder = () => {
                             .length ===
                           index + 1 ? (
                             <span className="mx-2 fw-bold fs-5 text-muted">
-                              {" "}
+                              {' '}
                             </span>
                           ) : (
                             <span className="mx-2 fw-bold fs-5 text-muted">
@@ -1182,15 +1179,15 @@ const TotalClientWorkOrder = () => {
                         </Col>
                       ),
                     )
-                  : ""}
+                  : ''}
                 {orderItems[currentOrderIndex].totalCargoPkg.length === 1 ? (
-                  ""
+                  ''
                 ) : (
                   <Col md="auto" sm="auto" xs={12} className="mb-2">
                     <Button
                       className="d-flex  align-items-center gap-2"
                       variant="danger"
-                      onClick={() => handlePackageRemove("totalCargoPkg")}
+                      onClick={() => handlePackageRemove('totalCargoPkg')}
                     >
                       <FaTimes />
                       <span>Remove PKG</span>
@@ -1201,7 +1198,7 @@ const TotalClientWorkOrder = () => {
                   <Button
                     className="d-flex align-items-center gap-2"
                     variant="primary"
-                    onClick={() => handlePackageAdd("totalCargoPkg")}
+                    onClick={() => handlePackageAdd('totalCargoPkg')}
                   >
                     <FaPlus />
                     <span>Add PKG</span>
@@ -1234,7 +1231,7 @@ const TotalClientWorkOrder = () => {
                               }
                               onChange={(e) =>
                                 handlePackageChange(
-                                  "totalCargoWgt",
+                                  'totalCargoWgt',
                                   index,
                                   e.target.value,
                                 )
@@ -1252,7 +1249,7 @@ const TotalClientWorkOrder = () => {
                             .length ===
                           index + 1 ? (
                             <span className="mx-2 fw-bold fs-5 text-muted">
-                              {" "}
+                              {' '}
                             </span>
                           ) : (
                             <span className="mx-2 fw-bold fs-5 text-muted">
@@ -1262,15 +1259,15 @@ const TotalClientWorkOrder = () => {
                         </Col>
                       ),
                     )
-                  : ""}
+                  : ''}
                 {orderItems[currentOrderIndex].totalCargoWgt.length === 1 ? (
-                  ""
+                  ''
                 ) : (
                   <Col md="auto" sm="auto" xs={12} className="mb-2">
                     <Button
                       className="d-flex  align-items-center gap-2"
                       variant="danger"
-                      onClick={() => handlePackageRemove("totalCargoWgt")}
+                      onClick={() => handlePackageRemove('totalCargoWgt')}
                     >
                       <FaTimes />
                       <span>Remove WGT</span>
@@ -1281,7 +1278,7 @@ const TotalClientWorkOrder = () => {
                   <Button
                     className="d-flex align-items-center gap-2"
                     variant="primary"
-                    onClick={() => handlePackageAdd("totalCargoWgt")}
+                    onClick={() => handlePackageAdd('totalCargoWgt')}
                   >
                     <FaPlus />
                     <span>Add WGT</span>
@@ -1300,7 +1297,7 @@ const TotalClientWorkOrder = () => {
                     }))}
                     value={orderItems[currentOrderIndex].equipmentType}
                     onChange={(selected) =>
-                      handleSelectChange("equipmentType", selected)
+                      handleSelectChange('equipmentType', selected)
                     }
                     styles={customSelectStyles}
                     menuPortalTarget={document.body}
@@ -1320,7 +1317,7 @@ const TotalClientWorkOrder = () => {
                     }))}
                     value={orderItems[currentOrderIndex].gang}
                     onChange={(selected) =>
-                      handleSelectChange("gang", selected)
+                      handleSelectChange('gang', selected)
                     }
                     styles={customSelectStyles}
                     menuPortalTarget={document.body}
@@ -1343,7 +1340,7 @@ const TotalClientWorkOrder = () => {
         </Modal.Footer>
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default TotalClientWorkOrder;
+export default TotalClientWorkOrder

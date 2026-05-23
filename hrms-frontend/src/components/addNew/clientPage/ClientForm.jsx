@@ -36,10 +36,11 @@ const ClientForm = ({
   const [clientSites, setClientSites] = useState([])
 
   const initialFormData = {
+    // CLIENT DETAILS
     companyName: '',
+    contactPersonName: '',
     contactNo: '',
     emailId: '',
-    contactPersonName: '',
     address: '',
     city: '',
     state: '',
@@ -47,16 +48,21 @@ const ClientForm = ({
     gstStateCode: '',
     gstNo: '',
     sacCode: '',
-    companyBankName: '',
     billingCompany: '',
+    companyBankName: '',
     otherInfo: '',
     termsAndConditions: '',
+
+    // BANK DETAILS
     bankName: '',
     accountNo: '',
     ifscCode: '',
     micrCode: '',
     branch: '',
     bankCity: '',
+
+    // SITES
+    sites: [],
   }
 
   const [formData, setFormData] = useState(initialFormData)
@@ -228,6 +234,33 @@ const ClientForm = ({
         ...prev,
         [key]: '',
       }))
+    }
+  }
+
+  const saveClient = async (clientData) => {
+    try {
+      const response = await axios.post(`${API_URL}/api/clients`, clientData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+
+      console.log(response.data)
+
+      alert('Client Added Successfully')
+
+      if (onSave) {
+        onSave(response.data)
+      }
+
+      if (onBack) {
+        onBack()
+      }
+    } catch (error) {
+      console.log(error)
+
+      alert(error.response?.data?.message || 'Failed to add client')
     }
   }
 
@@ -786,7 +819,7 @@ const ClientForm = ({
       return
     }
     // console.log(validationErrors);
-    onSave({
+    saveClient({
       ...formData,
       sites: [
         {

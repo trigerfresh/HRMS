@@ -204,7 +204,7 @@ exports.createClient = async (req, res) => {
       // ==========================================
       const siteResult = await transaction
         .request()
-        .input('client_id', sql.VarChar, clientId)
+        .input('client_id', sql.VarChar, String(clientId))
         .input('site_name', sql.VarChar, site.siteName)
         .input('work_order_no', sql.VarChar, site.workOrderNo)
         .input('client_code', sql.VarChar, clientCode)
@@ -235,14 +235,14 @@ exports.createClient = async (req, res) => {
 
         .input('cc_loct_status', sql.VarChar, site.status || 'Active')
 
-        .input('cc_cgst', sql.VarChar, site.cgst || 0)
-        .input('cc_sgst', sql.VarChar, site.sgst || 0)
-        .input('cc_igst', sql.VarChar, site.igst || 0)
+        .input('cc_cgst', sql.VarChar, String(site.cgst) || '0')
+        .input('cc_sgst', sql.VarChar, String(site.sgst) || '0')
+        .input('cc_igst', sql.VarChar, String(site.igst) || '0')
 
         .input(
           'cc_est_billing_amount',
           sql.VarChar,
-          site.expectedBillingAmount || 0,
+          String(site.expectedBillingAmount) || '0',
         )
 
         .input('billing_nodays', sql.VarChar, site.daysForBilling || 0)

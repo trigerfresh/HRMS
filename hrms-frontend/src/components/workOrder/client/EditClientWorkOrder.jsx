@@ -1,311 +1,427 @@
-import axios from "axios";
-import React, { useState } from "react";
-import { useEffect } from "react";
-import { Alert, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
-import { FaPlus } from "react-icons/fa";
-import { formatDateForInput } from "../../../utils/utils";
-import Select from "react-select";
-import { customSelectStyles } from "../../../utils/utils";
+import axios from 'axios'
+import React, { useState } from 'react'
+import { useEffect } from 'react'
+import { Alert, Button, Card, Col, Form, Row, Table } from 'react-bootstrap'
+import { FaPlus } from 'react-icons/fa'
+import { formatDateForInput } from '../../../utils/utils'
+import Select from 'react-select'
+import { customSelectStyles } from '../../../utils/utils'
 
-const COMPANY_API = `${import.meta.env.VITE_API_URL}/api/clients`;
-const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+const COMPANY_API = `${import.meta.env.VITE_API_URL}/api/clients`
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`
 
 const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
-  const [currentOrderIndex, setCurrentOrderIndex] = useState(null);
-  const [gangs, setGangs] = useState([]);
-  const [equipmentTypes, setEquipmentTypes] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [workOrderTypes, setWorkOrderTypes] = useState([]);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [error, setError] = useState(null);
+  const [currentOrderIndex, setCurrentOrderIndex] = useState(null)
+  const [gangs, setGangs] = useState([])
+  const [equipmentTypes, setEquipmentTypes] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [workOrderTypes, setWorkOrderTypes] = useState([])
+  const [validationErrors, setValidationErrors] = useState({})
+  const [error, setError] = useState(null)
 
   const [formData, setFormData] = useState({
-    clientId: "",
-    workOrderType: "",
-    workOrderNo: "",
-    workOrderDate: "",
-    igmNo: "",
-    importerName: "",
-    chaName: "",
-    vendor: "",
-    totalCargoPkg: 0,
-    totalCargoWgt: 0,
-  });
+    client_name: '',
+    client_id: '',
+    work_order_no: '',
+    work_order_date: '',
+    work_order_type: '',
+    status: '',
+    cha_name: '',
+    igm_no: '',
+    importer_name: '',
+    vendor: '',
+  })
 
-  const [orderItems, setOrderItems] = useState({
-    itemNo: "",
-    containerNo: "",
-    size: "",
-    invoiceNo: "",
-    vehichleNo: "",
-    destuffPkgs: "",
-    destuffWgt: "",
-    exam: "",
-    remarks: "",
-    hours: "",
-    cbm: "",
-    sealNo: "",
-    arrivalDate: "",
-    allowPkg: "",
-    allowWgt: "",
-    exporterName: "",
-    status: "Pending",
-    totalCargoPkg: [{ value: "" }],
-    totalCargoWgt: [{ value: "" }],
-    equipmentType: [],
-    gang: [],
-    totalCargoPkgSum: "",
-    totalCargoWgtSum: "",
-  });
+  const [orderItems, setOrderItems] = useState([
+    {
+      item_no: '',
+      container_no: '',
+      size: '',
+      invoice_number: '',
+      vehicle_no: '',
+      destuff_pkgs: '',
+      destuff_weight: '',
+      percentage_exam: '',
+      remarks: '',
+      hours: '',
+      cbm: '',
+      seal_no: '',
+      arrival_date: '',
+      allow_pkg: '',
+      allow_weight: '',
+      export_party: '',
+      status: 'Pending',
+      totalCargoPkg: [{ value: '' }],
+      totalCargoWgt: [{ value: '' }],
+      equipmentType: [],
+      gang: [],
+    },
+  ])
 
   useEffect(() => {
-    if (!editingData) return;
-    // console.log(editingData);
+    if (!editingData) return
 
     setFormData({
-      clientId: editingData.cliWorkOrderId?.clientId || "",
-      workOrderType: editingData.cliWorkOrderId?.workOrderType || "",
-      workOrderNo: editingData.cliWorkOrderId?.workOrderNo || "",
-      workOrderDate: editingData.cliWorkOrderId?.workOrderDate
-        ? formatDateForInput(editingData.cliWorkOrderId?.workOrderDate)
-        : "",
-      igmNo: editingData.cliWorkOrderId?.igmNo || "",
-      importerName: editingData.cliWorkOrderId?.importerName || "",
-      chaName: editingData.cliWorkOrderId?.chaName || "",
-      vendor: editingData.cliWorkOrderId?.vendor || "",
-    });
+      client_name: editingData.client_id || '',
+      client_id: editingData.client_id || '',
+      work_order_no: editingData.work_order_no || '',
+      work_order_date: editingData.work_order_date || '',
+      work_order_type: editingData.work_order_type || '',
+      status: editingData.status || '',
+      cha_name: editingData.cha_name || '',
+      igm_no: editingData.igm_no || '',
+      importer_name: editingData.importer_name || '',
+      vendor: editingData.vendor || '',
+    })
 
-    setOrderItems({
-      _id: editingData._id,
-      cliWorkOrderId: editingData.cliWorkOrderId._id || "",
-      itemNo: editingData.itemNo || "",
-      containerNo: editingData.containerNo || "",
-      size: editingData.size || "",
-      invoiceNo: editingData.invoiceNo || "",
-      vehichleNo: editingData.vehichleNo || "",
-      destuffPkgs: editingData.destuffPkgs || "",
-      destuffWgt: editingData.destuffWgt || "",
-      exam: editingData.exam || "",
-      remarks: editingData.remarks || "",
-      hours: editingData.hours || "",
-      cbm: editingData.cbm || "",
-      sealNo: editingData.sealNo || "",
-      arrivalDate: editingData.arrivalDate
-        ? formatDateForInput(editingData.arrivalDate)
-        : "",
-      allowPkg: editingData.allowPkg || "",
-      allowWgt: editingData.allowWgt || "",
-      exporterName: editingData.exporterName || "",
-      status: editingData.status || "Pending",
-      totalCargoPkgSum: editingData.totalCargoPkgSum || "",
-      totalCargoWgtSum: editingData.totalCargoWgtSum || "",
-      // equipmentType:
-      //   editingData.equipmentType?.map((e) => ({
-      //     value: e.value || "",
-      //     label: e.label || "",
-      //   })) || [],
-      // gang:
-      //   editingData.gang?.map((g) => ({
-      //     value: g.value || "",
-      //     label: g.label || "",
-      //   })) || [],
-      // equipmentType: editingData.equipmentType || [],
-      // gang: editingData.gang || [],
-    });
-  }, [editingData]);
+    if (editingData.details?.length > 0) {
+      const mappedItems = editingData.details.map((item) => ({
+        item_no: item.item_no || '',
+        container_no: item.container_no || '',
+        size: item.size || '',
+        invoice_number: item.invoice_number || '',
+        vehicle_no: item.vehicle_no || '',
+        destuff_pkgs: item.destuff_pkgs || '',
+        destuff_weight: item.destuff_weight || '',
+        percentage_exam: item.percentage_exam || '',
+        remarks: item.remarks || '',
+        hours: item.hours || '',
+        cbm: item.cbm || '',
+        seal_no: item.seal_no || '',
+        arrival_date: item.arrival_date || '',
+        allow_pkg: item.allow_pkg || '',
+        allow_weight: item.allow_weight || '',
+        export_party: item.export_party || '',
+        status: item.status || 'Pending',
+
+        totalCargoPkg: item.total_cargo_pkgs
+          ? [{ value: item.total_cargo_pkgs }]
+          : [{ value: '' }],
+
+        totalCargoWgt: item.total_cargo_weight
+          ? [{ value: item.total_cargo_weight }]
+          : [{ value: '' }],
+
+        equipmentType: [],
+
+        gang: item.gang_name
+          ? [
+              {
+                value: item.gang_name,
+                label: item.gang_name,
+              },
+            ]
+          : [],
+      }))
+
+      setOrderItems(mappedItems)
+    }
+  }, [editingData])
 
   useEffect(() => {
-    if (!editingData) return;
-    if (!equipmentTypes.length || !gangs.length) return;
+    if (!editingData) return
+    if (!equipmentTypes.length || !gangs.length) return
 
-    setOrderItems((prev) => ({
-      ...prev,
+    setOrderItems((prev) =>
+      prev.map((item) => ({
+        ...item,
 
-      equipmentType:
-        editingData.equipmentType?.map((sel) => {
-          const match = equipmentTypes.find((e) => e._id === sel.value);
-          return match ? { value: match._id, label: match.equipmentType } : sel; // fallback if master not loaded yet
-        }) || [],
+        equipmentType:
+          item.equipmentType?.map((sel) => {
+            const match = equipmentTypes.find((e) => e._id == sel.value)
 
-      gang:
-        editingData.gang?.map((sel) => {
-          const match = gangs.find((g) => g._id === sel.value);
-          return match ? { value: match._id, label: match.name } : sel;
-        }) || [],
-    }));
-  }, [editingData, equipmentTypes, gangs]);
+            return match
+              ? {
+                  value: match._id,
+                  label: match.equipmentType,
+                }
+              : sel
+          }) || [],
 
+        gang:
+          item.gang?.map((sel) => {
+            const match = gangs.find((g) => g.id == sel.value)
+
+            return match
+              ? {
+                  value: match.id,
+                  label: match.name,
+                }
+              : sel
+          }) || [],
+      })),
+    )
+  }, [editingData, equipmentTypes, gangs])
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (!token) {
-      console.error("No token found in localStorage");
-      return {};
+      console.error('No token found in localStorage')
+      return {}
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
-  };
+    }
+  }
 
   const fetchCompanies = async () => {
     try {
-      const { data } = await axios.get(COMPANY_API, getAuthHeaders());
-      setCompanies(data.data || data);
+      const { data } = await axios.get(COMPANY_API, getAuthHeaders())
+      setCompanies(data.data || data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to fetch clients. Please try again.')
 
-      console.error("Failed to fetch companies", err);
+      console.error('Failed to fetch companies', err)
     }
-  };
+  }
 
   const fetchWorkOrderTypes = async () => {
     try {
       const { data } = await axios.get(
-        `${API_BASE_URL}/work-order-type`,
+        `${API_BASE_URL}/workOrderType`,
         getAuthHeaders(),
-      );
-      // console.log(data);
-      setWorkOrderTypes(data);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+      )
 
-      console.error("Failed to fetch companies", err);
+      setWorkOrderTypes(data)
+    } catch (err) {
+      console.error(err)
     }
-  };
+  }
 
   const fetchEquipmentTypes = async () => {
     try {
       // console.log("hello");
       const { data } = await axios.get(`${API_BASE_URL}/equipment-type`, {
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setEquipmentTypes(data);
+      setEquipmentTypes(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         setError(
-          e.response?.data?.message || "Failed to fetch Equipment Types.",
-        );
+          e.response?.data?.message || 'Failed to fetch Equipment Types.',
+        )
       }
     }
-  };
+  }
 
   const fetchGangs = async () => {
     try {
       const { data } = await axios.get(`${API_BASE_URL}/gangs`, {
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setGangs(data);
+      setGangs(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        setError(e.response?.data?.message || "Failed to fetch Gangs.");
+        setError(e.response?.data?.message || 'Failed to fetch Gangs.')
       }
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCompanies();
-    fetchGangs();
-    fetchEquipmentTypes();
-    fetchWorkOrderTypes();
-  }, []);
+    fetchCompanies()
+    fetchGangs()
+    fetchEquipmentTypes()
+    fetchWorkOrderTypes()
+  }, [])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
-  const handleOrderItemChange = (e) => {
-    const { name, value } = e.target;
+  const handleOrderItemChange = (index, e) => {
+    const { name, value } = e.target
 
-    setOrderItems((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const updatedItems = [...orderItems]
 
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => ({ ...prev, [name]: "" }));
+    updatedItems[index][name] = value
+
+    setOrderItems(updatedItems)
+
+    if (validationErrors[`${name}_${index}`]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [`${name}_${index}`]: '',
+      }))
     }
-  };
+  }
 
-  const handleSelectChange = (field, selected) => {
-    setOrderItems((prev) => ({
-      ...prev,
-      [field]: selected || [],
-    }));
-  };
+  const handleSelectChange = (index, field, selected) => {
+    const updatedItems = [...orderItems]
+
+    updatedItems[index][field] = selected || []
+
+    setOrderItems(updatedItems)
+  }
 
   const validateCompanyDetails = () => {
-    const errors = {};
+    const errors = {}
 
-    if (!formData.clientId) {
-      errors.clientId = "Client is required.";
+    if (!formData.client_id) {
+      errors.client_name = 'Client is required.'
     }
-    if (!formData.workOrderType) {
-      errors.workOrderType = "Work order type is required.";
+
+    if (!formData.work_order_type) {
+      errors.work_order_type = 'Work order type is required.'
     }
-    if (!formData.workOrderNo.trim())
-      errors.workOrderNo = "Work Order No is required.";
 
-    // if (!formData.companyName.trim())
-    //   errors.companyName = "Company Name is required.";
+    if (!formData.work_order_no.trim()) {
+      errors.work_order_no = 'Work Order No is required.'
+    }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+
+    return Object.keys(errors).length === 0
+  }
 
   const validateOrderItems = () => {
-    const errors = {};
+    const errors = {}
 
-    if (!orderItems.itemNo || orderItems.itemNo.trim() === "") {
-      errors.itemNo = "Item No is required";
-    }
+    orderItems.forEach((orderItem, idx) => {
+      if (!orderItem.item_no || orderItem.item_no.trim() === '') {
+        errors[`item_no_${idx}`] = 'Item No is required'
+      }
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateCompanyDetails()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     } else if (!validateOrderItems()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     }
     const payload = {
       ...formData,
       orderItems: {
         ...orderItems,
       },
-    };
+    }
 
-    onSave(payload);
-  };
+    onSave(payload)
+  }
+
+  const handleUpdate = async () => {
+    try {
+      const payload = {
+        client_name:
+          companies.find((c) => c.id === formData.client_name)?.companyName ||
+          '',
+
+        client_id: formData.client_id,
+
+        work_order_no: formData.work_order_no,
+
+        work_order_date: formData.work_order_date,
+
+        work_order_type: formData.work_order_type,
+
+        igm_no: formData.igm_no,
+
+        importer_name: formData.importer_name,
+
+        cha_name: formData.cha_name,
+
+        vendor: formData.vendor,
+
+        status: formData.status || 'Pending',
+
+        details: orderItems.map((item) => ({
+          item_no: item.item_no || '',
+
+          container_no: item.container_no || '',
+
+          vehicle_no: item.vehicle_no || '',
+
+          cargo_name: item.export_party || '',
+
+          invoice_number: item.invoice_number || '',
+
+          destuff_pkgs: item.destuff_pkgs || '',
+
+          destuff_weight: item.destuff_weight || '',
+
+          size: item.size || '',
+
+          percentage_exam: item.percentage_exam || '',
+
+          remarks: item.remarks || '',
+
+          hours: item.hours || '',
+
+          cbm: item.cbm || '',
+
+          seal_no: item.seal_no || '',
+
+          arrival_date: item.arrival_date || '',
+
+          allow_pkg: item.allow_pkg || '',
+
+          allow_weight: item.allow_weight || '',
+
+          total_cargo_pkgs:
+            item.totalCargoPkg?.map((p) => p.value).join(',') || '',
+
+          total_cargo_weight:
+            item.totalCargoWgt?.map((w) => w.value).join(',') || '',
+
+          status: item.status || '',
+
+          export_party: item.export_party || '',
+
+          gang_name: item.gang?.map((g) => g.label).join(',') || '',
+        })),
+      }
+
+      const workOrderId = Number(editingData?.work_order_id)
+
+      if (!workOrderId) {
+        alert('Invalid Work Order ID')
+        return
+      }
+
+      await axios.put(
+        `${API_BASE_URL}/work-orders/${workOrderId}`,
+        payload,
+        getAuthHeaders(),
+      )
+
+      console.log('Editing data', editingData.work_order_id)
+
+      alert('Work Order Updated Successfully')
+      onBack()
+    } catch (error) {
+      console.error(error)
+      alert('Failed to update work order')
+    }
+  }
 
   return (
     <div>
@@ -318,7 +434,7 @@ const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
           </Alert>
         )}
 
-        <Form onSubmit={handleSubmit}>
+        <Form onSubmit={handleUpdate}>
           <p className="form-subtitle">Work Order Detail</p>
 
           <Row>
@@ -326,125 +442,126 @@ const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
               <Form.Group controlId="clientId">
                 <Form.Label>Client *</Form.Label>
                 <Form.Select
-                  name="clientId"
-                  value={formData.clientId}
+                  name="client_id"
+                  value={formData.client_id}
                   onChange={handleInputChange}
-                  isInvalid={!!validationErrors.clientId}
+                  isInvalid={!!validationErrors.client_id}
                 >
                   <option value="">Select</option>
                   {companies.map((c) => (
-                    <option key={c._id} value={c._id}>
+                    <option key={c.id} value={c.id}>
                       {c.companyName}
                     </option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.clientId}
+                  {validationErrors.client_id}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="workOrderType">
+              <Form.Group controlId="work_order_type">
                 <Form.Label>Work Order Type *</Form.Label>
                 <Form.Select
-                  name="workOrderType"
-                  value={formData.workOrderType}
+                  name="work_order_type"
+                  value={formData.work_order_type}
                   onChange={handleInputChange}
-                  isInvalid={!!validationErrors.workOrderType}
+                  isInvalid={!!validationErrors.work_order_type}
                 >
                   <option value="">Select</option>
-                  {workOrderTypes.map((w) => (
-                    <option key={w._id || w.id} value={w._id}>
-                      {w.name}
+
+                  {workOrderTypes?.map((w) => (
+                    <option key={w._id || w.id} value={w.work_order_type}>
+                      {w.work_order_type}
                     </option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.workOrderType}
+                  {validationErrors.work_order_type}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="workOrderNo">
+              <Form.Group controlId="work_order_no">
                 <Form.Label>Work Order No *</Form.Label>
                 <Form.Control
                   type="text"
-                  name="workOrderNo"
-                  value={formData.workOrderNo}
+                  name="work_order_no"
+                  value={formData.work_order_no}
                   onChange={handleInputChange}
                   placeholder="Work Order No"
-                  isInvalid={!!validationErrors.workOrderNo}
+                  isInvalid={!!validationErrors.work_order_no}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.workOrderNo}
+                  {validationErrors.work_order_no}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
 
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group className="workOrderDate">
+              <Form.Group className="work_order_date">
                 <Form.Label>Work Order Date</Form.Label>
                 <Form.Control
                   type="date"
-                  value={formData.workOrderDate}
+                  value={formData.work_order_date}
                   onChange={handleInputChange}
-                  name="workOrderDate"
-                  isInvalid={!!validationErrors.workOrderDate}
+                  name="work_order_date"
+                  isInvalid={!!validationErrors.work_order_date}
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.workOrderDate}
+                  {validationErrors.work_order_date}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="igmNo">
+              <Form.Group controlId="igm_no">
                 <Form.Label>IGM No</Form.Label>
                 <Form.Control
                   type="text"
-                  name="igmNo"
-                  value={formData.igmNo}
+                  name="igm_no"
+                  value={formData.igm_no}
                   onChange={handleInputChange}
                   placeholder="IGM No"
-                  isInvalid={!!validationErrors.igmNo}
+                  isInvalid={!!validationErrors.igm_no}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.igmNo}
+                  {validationErrors.igm_no}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="importerName">
+              <Form.Group controlId="importer_name">
                 <Form.Label>Importer Name</Form.Label>
                 <Form.Control
                   type="text"
-                  name="importerName"
-                  value={formData.importerName}
+                  name="importer_name"
+                  value={formData.importer_name}
                   onChange={handleInputChange}
                   placeholder="Importer Name"
-                  isInvalid={!!validationErrors.importerName}
+                  isInvalid={!!validationErrors.importer_name}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.importerName}
+                  {validationErrors.importer_name}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="chaName">
+              <Form.Group controlId="cha_name">
                 <Form.Label>CHA Name</Form.Label>
                 <Form.Control
                   type="text"
-                  name="chaName"
-                  value={formData.chaName}
+                  name="cha_name"
+                  value={formData.cha_name}
                   onChange={handleInputChange}
                   placeholder="CHA Name"
-                  isInvalid={!!validationErrors.chaName}
+                  isInvalid={!!validationErrors.cha_name}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.chaName}
+                  {validationErrors.cha_name}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
@@ -476,13 +593,13 @@ const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
                 <tr>
                   <th
                     className="sticky-col"
-                    style={{ left: 0, minWidth: "70px" }}
+                    style={{ left: 0, minWidth: '70px' }}
                   >
                     Sr. No.
                   </th>
                   <th
                     className="sticky-col"
-                    style={{ left: "70px", minWidth: "150px" }}
+                    style={{ left: '70px', minWidth: '150px' }}
                   >
                     Item No.
                   </th>
@@ -502,245 +619,256 @@ const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
                   <th>Total Cargo Weight</th>
                   <th>Allow Pkg</th>
                   <th>Allow Weight</th>
-                  <th style={{ minWidth: "300px" }}>Equipment Name</th>
-                  <th style={{ minWidth: "300px" }}>Gang Name</th>
+                  <th style={{ minWidth: '300px' }}>Equipment Name</th>
+                  <th style={{ minWidth: '300px' }}>Gang Name</th>
                   <th>Exporter Name</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="sticky-col bg-white" style={{ left: 0 }}>
-                    {1}
-                  </td>
-                  <td className="sticky-col bg-white" style={{ left: "70px" }}>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="itemNo"
-                      value={orderItems.itemNo || ""}
-                      isInvalid={!!validationErrors.clientId}
-                      onChange={handleOrderItemChange}
-                    />
-                    <Form.Control.Feedback type="invalid"></Form.Control.Feedback>
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="containerNo"
-                      value={orderItems.containerNo || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      name="size"
-                      type="text"
-                      value={orderItems.size || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="invoiceNo"
-                      value={orderItems.invoiceNo || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="vehichleNo"
-                      value={orderItems.vehichleNo || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="destuffPkgs"
-                      value={orderItems.destuffPkgs || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="destuffWgt"
-                      value={orderItems.destuffWgt || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      name="exam"
-                      type="text"
-                      value={orderItems.exam || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      name="remarks"
-                      type="text"
-                      value={orderItems.remarks || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      name="hours"
-                      value={orderItems.hours || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      name="cbm"
-                      type="text"
-                      value={orderItems.cbm || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="sealNo"
-                      value={orderItems.sealNo || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="date"
-                      name="arrivalDate"
-                      value={orderItems.arrivalDate || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="totalCargoPkgSum"
-                      value={orderItems.totalCargoPkgSum || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="totalCargoWgtSum"
-                      value={orderItems.totalCargoWgtSum || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="allowPkg"
-                      value={orderItems.allowPkg || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="allowWgt"
-                      value={orderItems.allowWgt || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    {/* <Form.Control
-                        style={{ width: "auto" }}
-                        type="text"
-                        name="equipmentName"
-                        value={orderItem.equipmentType || ""}
-                        onChange={(e) => handleOrderItemChange(idx, e)}
-                        /> */}
-                    <Select
-                      style={{ width: "auto" }}
-                      isMulti
-                      hideSelectedOptions
-                      name="equipmentType"
-                      options={equipmentTypes.map((e) => ({
-                        value: e._id,
-                        label: e.equipmentType,
-                      }))}
-                      value={orderItems.equipmentType || []}
-                      onChange={(selected) =>
-                        handleSelectChange("equipmentType", selected)
-                      }
-                      styles={customSelectStyles}
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                    />
-                  </td>
-                  <td>
-                    {/* <Form.Control
-                        style={{ width: "auto" }}
-                        type="text"
-                        name="gangName"
-                        value={orderItem.gangName || ""}
-                        onChange={(e) => handleOrderItemChange(idx, e)}
-                        /> */}
-                    <Select
-                      isMulti
-                      name="gang"
-                      hideSelectedOptions
-                      options={gangs.map((g) => ({
-                        value: g._id,
-                        label: g.name,
-                      }))}
-                      value={orderItems.gang || []}
-                      onChange={(selected) =>
-                        handleSelectChange("gang", selected)
-                      }
-                      styles={customSelectStyles}
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                    />
-                  </td>
-                  <td>
-                    <Form.Control
-                      style={{ width: "auto" }}
-                      type="text"
-                      name="exporterName"
-                      value={orderItems.exporterName || ""}
-                      onChange={handleOrderItemChange}
-                    />
-                  </td>
-                  <td>
-                    <Form.Select
-                      name="status"
-                      value={orderItems.status || ""}
-                      onChange={handleOrderItemChange}
-                      style={{ width: "auto" }}
+                {orderItems.map((orderItem, idx) => (
+                  <tr key={idx}>
+                    <td className="sticky-col bg-white" style={{ left: 0 }}>
+                      {idx + 1}
+                    </td>
+
+                    <td
+                      className="sticky-col bg-white"
+                      style={{ left: '70px' }}
                     >
-                      <option value="">Select</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </Form.Select>
-                  </td>
-                </tr>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="item_no"
+                        value={orderItem.item_no || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="container_no"
+                        value={orderItem.container_no || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="size"
+                        value={orderItem.size || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="invoice_number"
+                        value={orderItem.invoice_number || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="vehicle_no"
+                        value={orderItem.vehicle_no || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="destuff_pkgs"
+                        value={orderItem.destuff_pkgs || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="destuff_weight"
+                        value={orderItem.destuff_weight || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="percentage_exam"
+                        value={orderItem.percentage_exam || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="remarks"
+                        value={orderItem.remarks || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="hours"
+                        value={orderItem.hours || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="cbm"
+                        value={orderItem.cbm || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="seal_no"
+                        value={orderItem.seal_no || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="date"
+                        name="arrival_date"
+                        value={formatDateForInput(orderItem.arrival_date) || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        value={
+                          orderItem.totalCargoPkg
+                            ?.map((p) => p.value)
+                            .join(', ') || ''
+                        }
+                        readOnly
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        value={
+                          orderItem.totalCargoWgt
+                            ?.map((w) => w.value)
+                            .join(', ') || ''
+                        }
+                        readOnly
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="allow_pkg"
+                        value={orderItem.allow_pkg || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="allow_weight"
+                        value={orderItem.allow_weight || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td style={{ minWidth: '300px' }}>
+                      <Select
+                        isMulti
+                        options={equipmentTypes.map((e) => ({
+                          value: e._id,
+                          label: e.equipmentType,
+                        }))}
+                        value={orderItem.equipmentType || []}
+                        onChange={(selected) =>
+                          handleSelectChange(idx, 'equipmentType', selected)
+                        }
+                        styles={customSelectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </td>
+
+                    <td style={{ minWidth: '300px' }}>
+                      <Select
+                        isMulti
+                        options={gangs.map((g) => ({
+                          value: g.id,
+                          label: g.name,
+                        }))}
+                        value={orderItem.gang || []}
+                        onChange={(selected) =>
+                          handleSelectChange(idx, 'gang', selected)
+                        }
+                        styles={customSelectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Control
+                        style={{ width: 'auto' }}
+                        type="text"
+                        name="export_party"
+                        value={orderItem.export_party || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      />
+                    </td>
+
+                    <td>
+                      <Form.Select
+                        name="status"
+                        value={orderItem.status || ''}
+                        onChange={(e) => handleOrderItemChange(idx, e)}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                      </Form.Select>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </Table>
           </div>
@@ -749,14 +877,14 @@ const EditClientWorkOrder = ({ editingData, onSave, onBack }) => {
             <Button variant="secondary" className="me-2" onClick={onBack}>
               Cancel
             </Button>
-            <Button type="button" variant="primary" onClick={handleSubmit}>
+            <Button type="button" variant="primary" onClick={handleUpdate}>
               Save Work Order
             </Button>
           </div>
         </Form>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default EditClientWorkOrder;
+export default EditClientWorkOrder

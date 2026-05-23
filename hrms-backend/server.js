@@ -20,7 +20,7 @@ const vendorRoutes = require('./routes/vendorsMasterRoutes.js')
 const salaryTemplateRoutes = require('./routes/salaryTemplateRoutes.js')
 const empTypeRoutes = require('./routes/employeeTypeRoutes.js')
 const employeeRoutes = require('./routes/employeeRoutes.js')
-
+const workOrderRoutes = require('./routes/woRateChartRoutes.js')
 // // Connect DB
 // connectDB()
 
@@ -52,6 +52,7 @@ app.use('/api/vendors-master', vendorRoutes)
 app.use('/api/salary-templates', salaryTemplateRoutes)
 app.use('/api/employee-types', empTypeRoutes)
 app.use('/api/employees', employeeRoutes)
+app.use('/api/work-orders', workOrderRoutes)
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 

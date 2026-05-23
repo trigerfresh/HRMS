@@ -1,7 +1,7 @@
-import axios from "axios";
-import React, { useState } from "react";
-import { useEffect } from "react";
-import Select from "react-select";
+import axios from 'axios'
+import React, { useState } from 'react'
+import { useEffect } from 'react'
+import Select from 'react-select'
 import {
   Alert,
   Button,
@@ -11,61 +11,63 @@ import {
   Modal,
   Row,
   Table,
-} from "react-bootstrap";
-import { FaPlus, FaTimes } from "react-icons/fa";
-import { customSelectStyles } from "../../../utils/utils";
+} from 'react-bootstrap'
+import { FaPlus, FaTimes } from 'react-icons/fa'
+import { customSelectStyles } from '../../../utils/utils'
 
-const COMPANY_API = `${import.meta.env.VITE_API_URL}/api/clients`;
-const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+const COMPANY_API = `${import.meta.env.VITE_API_URL}/api/clients`
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`
 
 const AddClientWorkOrder = ({ onSave, onBack }) => {
-  const [showPkgDetailModal, setShowPkgDetailModal] = useState(false);
-  const [currentOrderIndex, setCurrentOrderIndex] = useState(null);
-  const [gangs, setGangs] = useState([]);
-  const [equipmentTypes, setEquipmentTypes] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [workOrderTypes, setWorkOrderTypes] = useState([]);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [error, setError] = useState(null);
+  const [showPkgDetailModal, setShowPkgDetailModal] = useState(false)
+  const [currentOrderIndex, setCurrentOrderIndex] = useState(null)
+  const [gangs, setGangs] = useState([])
+  const [equipmentTypes, setEquipmentTypes] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [workOrderTypes, setWorkOrderTypes] = useState([])
+  const [validationErrors, setValidationErrors] = useState({})
+  const [error, setError] = useState(null)
 
   const [formData, setFormData] = useState({
-    clientId: "",
-    workOrderType: "",
-    workOrderNo: "",
-    workOrderDate: "",
-    igmNo: "",
-    importerName: "",
-    chaName: "",
-    vendor: "",
-    totalCargoPkg: 0,
-    totalCargoWgt: 0,
-  });
+    client_name: '',
+    client_id: '',
+    work_order_no: '',
+    work_order_date: '',
+    work_order_type: '',
+    status: '',
+    cha_name: '',
+    igm_no: '',
+    importer_name: '',
+    vendor: '',
+    // totalCargoPkg: 0,
+    // totalCargoWgt: 0,
+  })
 
   const [orderItems, setOrderItems] = useState([
     {
-      itemNo: "",
-      containerNo: "",
-      size: "",
-      invoiceNo: "",
-      vehichleNo: "",
-      destuffPkgs: "",
-      destuffWgt: "",
-      exam: "",
-      remarks: "",
-      hours: "",
-      cbm: "",
-      sealNo: "",
-      arrivalDate: "",
-      allowPkg: "",
-      allowWgt: "",
-      exporterName: "",
-      status: "Pending",
-      totalCargoPkg: [{ value: "" }],
-      totalCargoWgt: [{ value: "" }],
-      equipmentType: [],
-      gang: [],
+      item_no: '',
+      container_no: '',
+      size: '',
+      invoice_number: '',
+      vehicle_no: '',
+      destuff_pkgs: '',
+      destuff_weight: '',
+      percentage_exam: '',
+      remarks: '',
+      hours: '',
+      cbm: '',
+      seal_no: '',
+      arrival_date: '',
+      allow_pkg: '',
+      allow_weight: '',
+      export_party: '',
+      status: 'Pending',
+      total_cargo_pkgs: [{ value: '' }],
+      total_cargo_weight: [{ value: '' }],
+      // equipmentType: [],
+      gang_name: [],
     },
-  ]);
+  ])
 
   useEffect(() => {
     const totalPkg = orderItems.reduce((sum, order) => {
@@ -75,8 +77,8 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
           (s, p) => s + Number(p.value || 0),
           0,
         )
-      );
-    }, 0);
+      )
+    }, 0)
 
     const totalWgt = orderItems.reduce((sum, order) => {
       return (
@@ -85,317 +87,354 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
           (s, w) => s + Number(w.value || 0),
           0,
         )
-      );
-    }, 0);
+      )
+    }, 0)
 
     setFormData((prev) => ({
       ...prev,
       totalCargoPkg: totalPkg,
       totalCargoWgt: totalWgt,
-    }));
-  }, [orderItems]);
+    }))
+  }, [orderItems])
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (!token) {
-      console.error("No token found in localStorage");
-      return {};
+      console.error('No token found in localStorage')
+      return {}
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
-  };
+    }
+  }
 
   const fetchCompanies = async () => {
     try {
-      const { data } = await axios.get(COMPANY_API, getAuthHeaders());
-      setCompanies(data.data || data);
+      const { data } = await axios.get(COMPANY_API, getAuthHeaders())
+      setCompanies(data.data || data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to fetch clients. Please try again.')
 
-      console.error("Failed to fetch companies", err);
+      console.error('Failed to fetch companies', err)
     }
-  };
+  }
 
   const fetchWorkOrderTypes = async () => {
     try {
       const { data } = await axios.get(
-        `${API_BASE_URL}/work-order-type`,
+        `${API_BASE_URL}/workOrderType`,
         getAuthHeaders(),
-      );
+      )
       // console.log(data);
-      setWorkOrderTypes(data);
+      setWorkOrderTypes(data)
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else setError("Failed to fetch clients. Please try again.");
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else setError('Failed to fetch clients. Please try again.')
 
-      console.error("Failed to fetch companies", err);
+      console.error('Failed to fetch companies', err)
     }
-  };
+  }
 
   const fetchEquipmentTypes = async () => {
     try {
       // console.log("hello");
       const { data } = await axios.get(`${API_BASE_URL}/equipment-type`, {
         ...getAuthHeaders(),
-      });
+      })
       //   console.log(data);
-      setEquipmentTypes(data);
+      setEquipmentTypes(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
         setError(
-          e.response?.data?.message || "Failed to fetch Equipment Types.",
-        );
+          e.response?.data?.message || 'Failed to fetch Equipment Types.',
+        )
       }
     }
-  };
+  }
 
   const fetchGangs = async () => {
     try {
       const { data } = await axios.get(`${API_BASE_URL}/gangs`, {
         ...getAuthHeaders(),
-      });
+      })
       // console.log(data);
-      setGangs(data);
+      setGangs(data)
     } catch (e) {
       if (e.response?.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        localStorage.removeItem('token')
+        window.location.href = '/login'
       } else {
-        setError(e.response?.data?.message || "Failed to fetch Gangs.");
+        setError(e.response?.data?.message || 'Failed to fetch Gangs.')
       }
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCompanies();
-    fetchWorkOrderTypes();
-  }, []);
+    fetchCompanies()
+    fetchWorkOrderTypes()
+  }, [])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
 
-    const key = name;
+    const key = name
     if (validationErrors[key]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [key]: "",
-      }));
+        [key]: '',
+      }))
     }
-  };
+  }
 
   const handleOrderItemChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedOrders = [...orderItems];
-    updatedOrders[index][name] = value;
-    setOrderItems(updatedOrders);
+    const { name, value } = e.target
+    const updatedOrders = [...orderItems]
+    updatedOrders[index][name] = value
+    setOrderItems(updatedOrders)
 
     if (validationErrors[`${name}_${index}`]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [`${name}_${index}`]: "",
-      }));
+        [`${name}_${index}`]: '',
+      }))
     }
-  };
+  }
 
   const addOrderItems = () => {
     setOrderItems([
       ...orderItems,
       {
-        itemNo: "",
-        containerNo: "",
-        size: "",
-        invoiceNo: "",
-        vehichleNo: "",
-        destuffPkgs: "",
-        destuffWgt: "",
-        exam: "",
-        remarks: "",
-        hours: "",
-        cbm: "",
-        sealNo: "",
-        arrivalDate: "",
-        allowPkg: "",
-        allowWgt: "",
-        exporterName: "",
-        status: "Pending",
-        totalCargoPkg: [{ value: "" }],
-        totalCargoWgt: [{ value: "" }],
-        equipmentType: [],
-        gang: [],
+        item_no: '',
+        container_no: '',
+        size: '',
+        invoice_number: '',
+        vehicle_no: '',
+        destuff_pkgs: '',
+        destuff_weight: '',
+        percentage_exam: '',
+        remarks: '',
+        hours: '',
+        cbm: '',
+        seal_no: '',
+        arrival_date: '',
+        allow_pkg: '',
+        allow_weight: '',
+        export_party: '',
+        status: 'Pending',
+        total_cargo_pkgs: [{ value: '' }],
+        total_cargo_weight: [{ value: '' }],
+        // equipmentType: [],
+        gang_name: [],
       },
-    ]);
-  };
+    ])
+  }
 
   const removeOrderItem = (index) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index));
-  };
+    setOrderItems(orderItems.filter((_, i) => i !== index))
+  }
 
   const handlePackageChange = (field, index, value) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
         [field]: updated[currentOrderIndex][field].map((item, i) =>
           i === index ? { ...item, value } : item,
         ),
-      };
+      }
 
-      return updated;
-    });
+      return updated
+    })
 
     if (validationErrors[`${field}_${currentOrderIndex}_${index}`]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [`${field}_${currentOrderIndex}_${index}`]: "",
-      }));
+        [`${field}_${currentOrderIndex}_${index}`]: '',
+      }))
     }
-  };
+  }
 
   const handlePackageAdd = (field) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
-      const currentField = updated[currentOrderIndex][field] || [];
+      const currentField = updated[currentOrderIndex][field] || []
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
-        [field]: [...currentField, { value: "" }],
-      };
+        [field]: [...currentField, { value: '' }],
+      }
 
-      return updated;
-    });
-  };
+      return updated
+    })
+  }
 
   const handlePackageRemove = (field) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
+      const updated = [...prev]
 
-      const currentField = updated[currentOrderIndex][field];
+      const currentField = updated[currentOrderIndex][field]
 
-      if (!currentField || currentField.length <= 1) return prev;
+      if (!currentField || currentField.length <= 1) return prev
 
       updated[currentOrderIndex] = {
         ...updated[currentOrderIndex],
         [field]: currentField.slice(0, -1),
-      };
+      }
 
-      return updated;
-    });
-  };
+      return updated
+    })
+  }
 
   const handleSelectChange = (field, selected) => {
     setOrderItems((prev) => {
-      const updated = [...prev];
-      updated[currentOrderIndex][field] = selected;
-      return updated;
-    });
-  };
+      const updated = [...prev]
+      updated[currentOrderIndex][field] = selected
+      return updated
+    })
+  }
 
   const validateCompanyDetails = () => {
-    const errors = {};
+    const errors = {}
 
-    if (!formData.clientId) {
-      errors.clientId = "Client is required.";
+    if (!formData.client_name) {
+      errors.client_name = 'Client is required.'
     }
-    if (!formData.workOrderType) {
-      errors.workOrderType = "Work order type is required.";
+
+    if (!formData.work_order_type) {
+      errors.work_order_type = 'Work order type is required.'
     }
-    if (!formData.workOrderNo.trim())
-      errors.workOrderNo = "Work Order No is required.";
 
-    // if (!formData.companyName.trim())
-    //   errors.companyName = "Company Name is required.";
+    if (!formData.work_order_no.trim()) {
+      errors.work_order_no = 'Work Order No is required.'
+    }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+
+    return Object.keys(errors).length === 0
+  }
 
   const validateOrderItems = () => {
-    const errors = {};
-    orderItems.forEach((orderItem, idx) => {
-      if (!orderItem.itemNo || orderItem.itemNo.trim() === "") {
-        errors[`itemNo_${idx}`] = "Item No is required";
-      }
-    });
+    const errors = {}
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    orderItems.forEach((orderItem, idx) => {
+      if (!orderItem.item_no || orderItem.item_no.trim() === '') {
+        errors[`item_no_${idx}`] = 'Item No is required'
+      }
+    })
+
+    setValidationErrors(errors)
+
+    return Object.keys(errors).length === 0
+  }
 
   const validateCargoTotals = () => {
-    let valid = true;
-    const errors = {};
+    let valid = true
+    const errors = {}
 
     orderItems.forEach((order, orderIndex) => {
-      (order.totalCargoPkg || []).forEach((pkg, i) => {
+      ;(order.totalCargoPkg || []).forEach((pkg, i) => {
         if (!pkg.value && isNaN(pkg.value)) {
-          errors[`totalCargoPkg_${orderIndex}_${i}`] = "PKG must be a number";
-          valid = false;
+          errors[`totalCargoPkg_${orderIndex}_${i}`] = 'PKG must be a number'
+          valid = false
         }
-      });
-
-      (order.totalCargoWgt || []).forEach((wgt, i) => {
+      })
+      ;(order.totalCargoWgt || []).forEach((wgt, i) => {
         if (!wgt.value && isNaN(wgt.value)) {
-          errors[`totalCargoWgt_${orderIndex}_${i}`] =
-            "Weight must be a number";
-          valid = false;
+          errors[`totalCargoWgt_${orderIndex}_${i}`] = 'Weight must be a number'
+          valid = false
         }
-      });
-    });
+      })
+    })
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const getTotalFromArray = (arr) => {
-    if (!Array.isArray(arr)) return 0;
+    if (!Array.isArray(arr)) return 0
 
     return arr.reduce((sum, item) => {
-      const num = parseFloat(item.value);
-      return sum + (isNaN(num) ? 0 : num);
-    }, 0);
-  };
+      const num = parseFloat(item.value)
+      return sum + (isNaN(num) ? 0 : num)
+    }, 0)
+  }
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateCompanyDetails()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
-    } else if (!validateOrderItems()) {
-      alert("Please fix the validation errors before submitting.");
-      return;
-    } else if (!validateCargoTotals()) {
-      alert("Cargo PKG and Weight must be valid numbers.");
-      return;
+      alert('Please fix the validation errors before submitting.')
+      return
     }
 
-    const formattedOrderItems = orderItems.map((item) => ({
-      ...item,
-      totalCargoPkgSum: getTotalFromArray(item.totalCargoPkg),
-      totalCargoWgtSum: getTotalFromArray(item.totalCargoWgt),
-    }));
+    if (!validateOrderItems()) {
+      alert('Please fix the validation errors before submitting.')
+      return
+    }
 
-    const data = {
-      ...formData,
-      formattedOrderItems,
-    };
+    if (!validateCargoTotals()) {
+      alert('Cargo PKG and Weight must be valid numbers.')
+      return
+    }
 
-    onSave(data);
-  };
+    const payload = {
+      client_name:
+        companies.find((c) => c.id === formData.client_name)?.companyName || '',
+
+      client_id: formData.client_name,
+
+      work_order_no: formData.work_order_no,
+
+      work_order_date: formData.work_order_date,
+
+      work_order_type: formData.work_order_type,
+
+      igm_no: formData.igm_no,
+
+      importer_name: formData.importer_name,
+
+      cha_name: formData.cha_name,
+
+      vendor: formData.vendor,
+
+      status: 'Pending',
+
+      details: orderItems.map((item) => ({
+        item_no: item.item_no || '',
+
+        container_no: item.container_no || '',
+
+        vehicle_no: item.vehicle_no || '',
+
+        cargo_name: item.export_party || '',
+
+        invoice_number: item.invoice_number || '',
+
+        destuff_pkgs:
+          getTotalFromArray(item.totalCargoPkg) || item.destuff_pkgs || 0,
+
+        destuff_weight:
+          getTotalFromArray(item.totalCargoWgt) || item.destuff_weight || 0,
+      })),
+    }
+
+    console.log(payload)
+
+    onSave(payload)
+  }
 
   return (
     <div>
@@ -413,23 +452,24 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
 
           <Row>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="clientId">
+              <Form.Group controlId="client_name">
                 <Form.Label>Client *</Form.Label>
                 <Form.Select
-                  name="clientId"
-                  value={formData.clientId}
+                  name="client_name"
+                  value={formData.client_name}
                   onChange={handleInputChange}
-                  isInvalid={!!validationErrors.clientId}
+                  isInvalid={!!validationErrors.client_name}
                 >
                   <option value="">Select</option>
+
                   {companies.map((c) => (
-                    <option key={c._id} value={c._id}>
+                    <option key={c.id} value={c.id}>
                       {c.companyName}
                     </option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.clientId}
+                  {validationErrors.client_name}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
@@ -437,15 +477,15 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
               <Form.Group controlId="workOrderType">
                 <Form.Label>Work Order Type *</Form.Label>
                 <Form.Select
-                  name="workOrderType"
-                  value={formData.workOrderType}
+                  name="work_order_type"
+                  value={formData.work_order_type}
                   onChange={handleInputChange}
-                  isInvalid={!!validationErrors.workOrderType}
+                  isInvalid={!!validationErrors.work_order_type}
                 >
                   <option value="">Select</option>
                   {workOrderTypes.map((w) => (
-                    <option key={w._id || w.id} value={w._id}>
-                      {w.name}
+                    <option key={w.id} value={w.work_order_type}>
+                      {w.work_order_type}
                     </option>
                   ))}
                 </Form.Select>
@@ -455,86 +495,86 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="workOrderNo">
+              <Form.Group controlId="work_order_no">
                 <Form.Label>Work Order No *</Form.Label>
                 <Form.Control
                   type="text"
-                  name="workOrderNo"
-                  value={formData.workOrderNo}
+                  name="work_order_no"
+                  value={formData.work_order_no}
                   onChange={handleInputChange}
                   placeholder="Work Order No"
-                  isInvalid={!!validationErrors.workOrderNo}
+                  isInvalid={!!validationErrors.work_order_no}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.workOrderNo}
+                  {validationErrors.work_order_no}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
 
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group className="workOrderDate">
+              <Form.Group className="work_order_date">
                 <Form.Label>Work Order Date</Form.Label>
                 <Form.Control
                   type="date"
-                  value={formData.workOrderDate}
+                  value={formData.work_order_date}
                   onChange={handleInputChange}
-                  name="workOrderDate"
-                  isInvalid={!!validationErrors.workOrderDate}
+                  name="work_order_date"
+                  isInvalid={!!validationErrors.work_order_date}
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.workOrderDate}
+                  {validationErrors.work_order_date}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="igmNo">
+              <Form.Group controlId="igm_no">
                 <Form.Label>IGM No</Form.Label>
                 <Form.Control
                   type="text"
-                  name="igmNo"
-                  value={formData.igmNo}
+                  name="igm_no"
+                  value={formData.igm_no}
                   onChange={handleInputChange}
                   placeholder="IGM No"
-                  isInvalid={!!validationErrors.igmNo}
+                  isInvalid={!!validationErrors.igm_no}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.igmNo}
+                  {validationErrors.igm_no}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="importerName">
+              <Form.Group controlId="importer_name">
                 <Form.Label>Importer Name</Form.Label>
                 <Form.Control
                   type="text"
-                  name="importerName"
-                  value={formData.importerName}
+                  name="importer_name"
+                  value={formData.importer_name}
                   onChange={handleInputChange}
                   placeholder="Importer Name"
-                  isInvalid={!!validationErrors.importerName}
+                  isInvalid={!!validationErrors.importer_name}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.importerName}
+                  {validationErrors.importer_name}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col xs={12} sm={6} md={4} className="mb-3">
-              <Form.Group controlId="chaName">
+              <Form.Group controlId="cha_name">
                 <Form.Label>CHA Name</Form.Label>
                 <Form.Control
                   type="text"
-                  name="chaName"
-                  value={formData.chaName}
+                  name="cha_name"
+                  value={formData.cha_name}
                   onChange={handleInputChange}
                   placeholder="CHA Name"
-                  isInvalid={!!validationErrors.chaName}
+                  isInvalid={!!validationErrors.cha_name}
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  {validationErrors.chaName}
+                  {validationErrors.cha_name}
                 </Form.Control.Feedback>
               </Form.Group>
             </Col>
@@ -566,13 +606,13 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                 <tr>
                   <th
                     className="sticky-col"
-                    style={{ left: 0, minWidth: "70px" }}
+                    style={{ left: 0, minWidth: '70px' }}
                   >
                     Sr. No.
                   </th>
                   <th
                     className="sticky-col"
-                    style={{ left: "70px", minWidth: "150px" }}
+                    style={{ left: '70px', minWidth: '150px' }}
                   >
                     Item No.
                   </th>
@@ -613,39 +653,39 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     </td>
                     <td
                       className="sticky-col bg-white"
-                      style={{ left: "70px" }}
+                      style={{ left: '70px' }}
                     >
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="itemNo"
-                        value={orderItem.itemNo || ""}
-                        isInvalid={!!validationErrors[`itemNo_${idx}`]}
+                        name="item_no"
+                        value={orderItem.item_no || ''}
+                        isInvalid={!!validationErrors[`item_no_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors[`itemNo_${idx}`]}
+                        {validationErrors[`item_no_${idx}`]}
                       </Form.Control.Feedback>
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="containerNo"
-                        value={orderItem.containerNo || ""}
-                        isInvalid={!!validationErrors[`containerNo_${idx}`]}
+                        name="container_no"
+                        value={orderItem.container_no || ''}
+                        isInvalid={!!validationErrors[`container_no_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors[`containerNo_${idx}`]}
+                        {validationErrors[`container_no_${idx}`]}
                       </Form.Control.Feedback>
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         name="size"
                         type="text"
-                        value={orderItem.size || ""}
+                        value={orderItem.size || ''}
                         isInvalid={!!validationErrors[`size_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -655,67 +695,67 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="invoiceNo"
-                        value={orderItem.invoiceNo || ""}
-                        isInvalid={!!validationErrors[`invoiceNo_${idx}`]}
+                        name="invoice_number"
+                        value={orderItem.invoice_number || ''}
+                        isInvalid={!!validationErrors[`invoice_number_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors[`invoiceNo_${idx}`]}
+                        {validationErrors[`invoice_number_${idx}`]}
                       </Form.Control.Feedback>
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="vehichleNo"
-                        value={orderItem.vehichleNo || ""}
-                        isInvalid={!!validationErrors[`vehichleNo_${idx}`]}
+                        name="vehicle_no"
+                        value={orderItem.vehicle_no || ''}
+                        isInvalid={!!validationErrors[`vehicle_no_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors[`vehichleNo_${idx}`]}
+                        {validationErrors[`vehicle_no_${idx}`]}
                       </Form.Control.Feedback>
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="destuffPkgs"
-                        value={orderItem.destuffPkgs || ""}
+                        name="destuff_pkgs"
+                        value={orderItem.destuff_pkgs || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="destuffWgt"
-                        value={orderItem.destuffWgt || ""}
+                        name="destuff_weight"
+                        value={orderItem.destuff_weight || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
-                        name="exam"
+                        style={{ width: 'auto' }}
+                        name="percentage_exam"
                         type="text"
-                        value={orderItem.exam || ""}
-                        isInvalid={!!validationErrors[`exam_${idx}`]}
+                        value={orderItem.percentage_exam || ''}
+                        isInvalid={!!validationErrors[`percentage_exam_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors[`exam_${idx}`]}
+                        {validationErrors[`percentage_exam_${idx}`]}
                       </Form.Control.Feedback>
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         name="remarks"
                         type="text"
-                        value={orderItem.remarks || ""}
+                        value={orderItem.remarks || ''}
                         isInvalid={!!validationErrors[`remarks_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -725,9 +765,9 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         name="hours"
-                        value={orderItem.hours || ""}
+                        value={orderItem.hours || ''}
                         isInvalid={!!validationErrors[`hours_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -737,10 +777,10 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         name="cbm"
                         type="text"
-                        value={orderItem.cbm || ""}
+                        value={orderItem.cbm || ''}
                         isInvalid={!!validationErrors[`cbm_${idx}`]}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
@@ -750,46 +790,46 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="sealNo"
-                        value={orderItem.sealNo || ""}
+                        name="seal_no"
+                        value={orderItem.seal_no || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="date"
-                        name="arrivalDate"
-                        value={orderItem.arrivalDate || ""}
+                        name="arrival_date"
+                        value={orderItem.arrival_date || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="allowPkg"
-                        value={orderItem.allowPkg || ""}
+                        name="allow_pkg"
+                        value={orderItem.allow_pkg || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="allowWgt"
-                        value={orderItem.allowWgt || ""}
+                        name="allow_weight"
+                        value={orderItem.allow_weight || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
                     <td>
                       <Form.Control
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                         type="text"
-                        name="exporterName"
-                        value={orderItem.exporterName || ""}
+                        name="export_party"
+                        value={orderItem.export_party || ''}
                         onChange={(e) => handleOrderItemChange(idx, e)}
                       />
                     </td>
@@ -798,7 +838,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                         name="status"
                         value={orderItem.status}
                         onChange={(e) => handleOrderItemChange(idx, e)}
-                        style={{ width: "auto" }}
+                        style={{ width: 'auto' }}
                       >
                         <option value="">Select</option>
                         <option value="Pending">Pending</option>
@@ -811,14 +851,16 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                         <button
                           type="button"
                           onClick={() => {
-                            setCurrentOrderIndex(idx);
-                            if (!orderItems[idx].totalCargoPkg)
-                              orderItems[idx].totalCargoPkg = [{ value: "" }];
-                            if (!orderItems[idx].totalCargoWgt)
-                              orderItems[idx].totalCargoWgt = [{ value: "" }];
-                            setShowPkgDetailModal(true);
-                            fetchGangs();
-                            fetchEquipmentTypes();
+                            setCurrentOrderIndex(idx)
+                            if (!orderItems[idx].total_cargo_pkgs)
+                              orderItems[idx].total_cargo_pkgs = [{ value: '' }]
+                            if (!orderItems[idx].total_cargo_weight)
+                              orderItems[idx].total_cargo_weight = [
+                                { value: '' },
+                              ]
+                            setShowPkgDetailModal(true)
+                            fetchGangs()
+                            fetchEquipmentTypes()
                           }}
                           className="icon-btn view "
                         >
@@ -845,7 +887,8 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
             <Button variant="secondary" className="me-2" onClick={onBack}>
               Cancel
             </Button>
-            <Button type="button" variant="primary" onClick={handleSubmit}>
+            <Button type="submit" variant="primary">
+              {' '}
               Save Work Order
             </Button>
           </div>
@@ -888,7 +931,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                           }
                           onChange={(e) =>
                             handlePackageChange(
-                              "totalCargoPkg",
+                              'totalCargoPkg',
                               index,
                               e.target.value,
                             )
@@ -912,13 +955,13 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                   ),
                 )}
                 {orderItems[currentOrderIndex].totalCargoPkg.length === 1 ? (
-                  ""
+                  ''
                 ) : (
                   <Col md="auto" sm="auto" xs={12} className="mb-2">
                     <Button
                       className="d-flex  align-items-center gap-2"
                       variant="danger"
-                      onClick={() => handlePackageRemove("totalCargoPkg")}
+                      onClick={() => handlePackageRemove('totalCargoPkg')}
                     >
                       <FaTimes />
                       <span>Remove PKG</span>
@@ -929,7 +972,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                   <Button
                     className="d-flex align-items-center gap-2"
                     variant="primary"
-                    onClick={() => handlePackageAdd("totalCargoPkg")}
+                    onClick={() => handlePackageAdd('totalCargoPkg')}
                   >
                     <FaPlus />
                     <span>Add PKG</span>
@@ -961,7 +1004,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                           }
                           onChange={(e) =>
                             handlePackageChange(
-                              "totalCargoWgt",
+                              'totalCargoWgt',
                               index,
                               e.target.value,
                             )
@@ -985,13 +1028,13 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                   ),
                 )}
                 {orderItems[currentOrderIndex].totalCargoWgt.length === 1 ? (
-                  ""
+                  ''
                 ) : (
                   <Col md="auto" sm="auto" xs={12} className="mb-2">
                     <Button
                       className="d-flex  align-items-center gap-2"
                       variant="danger"
-                      onClick={() => handlePackageRemove("totalCargoWgt")}
+                      onClick={() => handlePackageRemove('totalCargoWgt')}
                     >
                       <FaTimes />
                       <span>Remove PKG</span>
@@ -1002,7 +1045,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                   <Button
                     className="d-flex align-items-center gap-2"
                     variant="primary"
-                    onClick={() => handlePackageAdd("totalCargoWgt")}
+                    onClick={() => handlePackageAdd('totalCargoWgt')}
                   >
                     <FaPlus />
                     <span>Add PKG</span>
@@ -1021,7 +1064,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                     }))}
                     value={orderItems[currentOrderIndex].equipmentType}
                     onChange={(selected) =>
-                      handleSelectChange("equipmentType", selected)
+                      handleSelectChange('equipmentType', selected)
                     }
                     styles={customSelectStyles}
                     menuPortalTarget={document.body}
@@ -1036,12 +1079,12 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
                   <Select
                     isMulti
                     options={gangs.map((g) => ({
-                      value: g._id,
+                      value: g.id,
                       label: g.name,
                     }))}
                     value={orderItems[currentOrderIndex].gang}
                     onChange={(selected) =>
-                      handleSelectChange("gang", selected)
+                      handleSelectChange('gang', selected)
                     }
                     styles={customSelectStyles}
                     menuPortalTarget={document.body}
@@ -1064,7 +1107,7 @@ const AddClientWorkOrder = ({ onSave, onBack }) => {
         </Modal.Footer>
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default AddClientWorkOrder;
+export default AddClientWorkOrder

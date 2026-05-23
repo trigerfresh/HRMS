@@ -149,7 +149,7 @@ export default function App() {
             element={<ClientWorkOrder />}
           />
           <Route
-            path="/work-order/client-work-order/print"
+            path="/work-orders/client-work-order/print"
             element={<PrintClientWorkOrder />}
           />
           <Route
